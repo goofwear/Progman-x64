@@ -9,13 +9,14 @@
 * 01-16-92 JohanneC       Created - mostly taken from old winlogon.c
 \***************************************************************************/
 
+#include <assert.h>
+#define ASSERT assert
 #include "sec.h"
-#include <winuserp.h>
-#include <string.h>
-#include <fcntl.h>
-#include <io.h>
-#include <stdio.h>
-#include <lm.h>
+// #include <string.h>
+// #include <fcntl.h>
+// #include <io.h>
+// #include <stdio.h>
+// #include <lm.h>
 
 
 /***************************************************************************\
@@ -81,7 +82,7 @@ SetWorldSecurity(
                          0, 0, 0, 0, 0, 0, 0,
                          &WorldSid);
 
-    if (!NT_SUCCESS(Status)) {
+    if (!(Status >= STATUS_SUCCESS)) {
         DbgOnlyPrint("progman failed to allocate memory for world sid\n");
         return(FALSE);
     }
@@ -111,7 +112,7 @@ SetWorldSecurity(
                          &SystemOpsAliasSid);
 
 
-    if (!NT_SUCCESS(Status)) {
+    if (!(Status >= STATUS_SUCCESS)) {
         DbgOnlyPrint("progman failed to allocate memory for admin sid\n");
         return(FALSE);
     }
@@ -279,7 +280,7 @@ BOOL TestUserForAdmin()
                          0, 0, 0, 0, 0, 0,
                          &AdminAliasSid);
 
-    if (!NT_SUCCESS(Status)) {
+    if (!(Status >= STATUS_SUCCESS)) {
         DbgOnlyPrint(TEXT("progman failed to allocate memory for admin sid\n"));
         goto Exit;
     }
@@ -420,7 +421,7 @@ SID_IDENTIFIER_AUTHORITY SystemSidAuthority = SECURITY_NT_AUTHORITY;
                  &InfoLength               // ReturnLength
                  );
 
-    if (!NT_SUCCESS(Status)) {
+    if (!(Status >= STATUS_SUCCESS)) {
         DbgOnlyPrint("Winlogon failed to query groups for admin token, status = 0x%lx\n", Status);
         Free(TokenGroupList);
         return(FALSE);
@@ -439,7 +440,7 @@ SID_IDENTIFIER_AUTHORITY SystemSidAuthority = SECURITY_NT_AUTHORITY;
                     0, 0, 0, 0, 0, 0,
                     &AdminSid);
 
-    if (!NT_SUCCESS(Status)) {
+    if (!(Status >= STATUS_SUCCESS)) {
         DbgOnlyPrint("Winlogon failed to initialize admin alias sid\n");
         Free(TokenGroupList);
         return(FALSE);
@@ -471,5 +472,3 @@ SID_IDENTIFIER_AUTHORITY SystemSidAuthority = SECURITY_NT_AUTHORITY;
 
     return(FoundAdmin);
 }
-
-

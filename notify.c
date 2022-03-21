@@ -122,7 +122,7 @@ VOID HandleGroupKeyChange(BOOL bCommonGroup)
               /* Skip icon titles. */
               if (!GetWindow(hwndT, GW_OWNER)) {
                   /* Compare the group title with the request. */
-                  pGroup = (PGROUP)GetWindowLong(hwndT,GWL_PGROUP);
+                  pGroup = (PGROUP)GetWindowLongPtr(hwndT,GWLP_PGROUP);
                   if (!lstrcmpi(szGroupKey, pGroup->lpKey)) {
                       if (pGroup->fCommon && bCommonGroup ||
                            !pGroup->fCommon && !bCommonGroup)
@@ -161,7 +161,7 @@ VOID HandleGroupKeyChange(BOOL bCommonGroup)
             continue;
 
         /* Compare the group title with the request. */
-         pGroup = (PGROUP)GetWindowLong(hwndT, GWL_PGROUP);
+         pGroup = (PGROUP)GetWindowLongPtr(hwndT, GWLP_PGROUP);
          if ( (pGroup->fCommon && !bCommonGroup) ||
               (!pGroup->fCommon && bCommonGroup) ) {
              continue;
