@@ -18,4 +18,4 @@ extern HANDLE gahEvents[2];
 BOOL APIENTRY InitializeGroupKeyNotification();
 VOID APIENTRY ResetProgramGroupsEvent(BOOL bCommonGroup);
 VOID HandleGroupKeyChange(BOOL bPersonalGroup);
-
+

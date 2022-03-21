@@ -9,7 +9,10 @@
 * 02-06-92 Davidc       Created.
 \***************************************************************************/
 
+#include <assert.h>
+#define ASSERT assert
 #include "sec.h"
+
 
 //
 // Private prototypes
@@ -101,25 +104,32 @@ CreateSecurityDescriptor(
     if (Acl != NULL) {
 
         Status = RtlCreateAcl(Acl, LengthAcl, ACL_REVISION);
-        ASSERT(NT_SUCCESS(Status));
 
-        //
-        // Add the ACES to the ACL and destroy the ACEs
-        //
+        if ((Status >= STATUS_SUCCESS))
+        {
+            //
+            // Add the ACES to the ACL and destroy the ACEs
+            //
 
-        for (AceIndex = 0; AceIndex < AceCount; AceIndex ++) {
+            for (AceIndex = 0; AceIndex < AceCount; AceIndex ++) {
 
-            if (Ace[AceIndex] != NULL) {
+                if (Ace[AceIndex] != NULL) {
 
-                Status = RtlAddAce(Acl, ACL_REVISION, 0, Ace[AceIndex],
-                                   Ace[AceIndex]->Header.AceSize);
+                    Status = RtlAddAce(Acl, ACL_REVISION, 0, Ace[AceIndex],
+                                       Ace[AceIndex]->Header.AceSize);
 
-                if (!NT_SUCCESS(Status)) {
-                    DbgOnlyPrint("progman : AddAce failed, status = 0x%lx\n\r", Status);
+                    if (!(Status >= STATUS_SUCCESS)) {
+                        DbgOnlyPrint("progman : AddAce failed, status = 0x%lx\n\r", Status);
+                    }
+
+                    DestroyAce(Ace[AceIndex]);
                 }
-
-                DestroyAce(Ace[AceIndex]);
             }
+        }
+        else
+        {
+            Free(Acl);
+            Acl = NULL;
         }
 
     } else {
@@ -140,13 +150,13 @@ CreateSecurityDescriptor(
     if (SecurityDescriptor != NULL) {
 
         Status = RtlCreateSecurityDescriptor(SecurityDescriptor, SECURITY_DESCRIPTOR_REVISION);
-        ASSERT(NT_SUCCESS(Status));
+        ASSERT((Status >= STATUS_SUCCESS));
 
         //
         // Set the DACL on the security descriptor
         //
         Status = RtlSetDaclSecurityDescriptor(SecurityDescriptor, TRUE, Acl, FALSE);
-        if (!NT_SUCCESS(Status)) {
+        if (!(Status >= STATUS_SUCCESS)) {
             DbgOnlyPrint("progman : SetDACLSD failed, status = 0x%lx\n\r", Status);
         }
     } else {
@@ -187,7 +197,7 @@ DeleteSecurityDescriptor(
     //
     Status = RtlGetDaclSecurityDescriptor(SecurityDescriptor,
                                           &Present, &Acl, &Defaulted);
-    if (NT_SUCCESS(Status)) {
+    if ((Status >= STATUS_SUCCESS)) {
 
         //
         // Destroy the ACL
@@ -263,4 +273,4 @@ DestroyAce(
     Free(Ace);
 }
 
-
+

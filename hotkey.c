@@ -29,6 +29,16 @@
 
 TCHAR szHotKey[] = TEXT("pmhotkey");
 
+typedef struct HOTKEYWINDOWBYTES {
+    UINT    hotkey;
+    int     cyFont;
+    HFONT   hfont;
+} HOTKEYWINDOWBYTES;
+
+#define HWL_HOTKEY  FIELD_OFFSET(HOTKEYWINDOWBYTES, hotkey)
+#define HWL_CYFONT  FIELD_OFFSET(HOTKEYWINDOWBYTES, cyFont)
+#define HWLP_FONT   FIELD_OFFSET(HOTKEYWINDOWBYTES, hfont)
+
 /*** SetHotKey --
  *
  *
@@ -51,10 +61,10 @@ void APIENTRY SetHotKey(HWND hwnd, WPARAM hk)
 
     /* don't invalidate if it's the same
      */
-    if((LONG)hk == GetWindowLong(hwnd, 0)){
+    if((LONG)hk == GetWindowLongPtr(hwnd, HWL_HOTKEY)){
         return;
     }
-    SetWindowLong(hwnd, 0, hk);
+    SetWindowLongPtr(hwnd, HWL_HOTKEY, (LONG)hk);
 
     InvalidateRect(hwnd,NULL,TRUE);
 }
@@ -121,7 +131,7 @@ void APIENTRY PaintHotKey(register HWND hwnd)
 
     LoadString(hAppInstance, IDS_PLUS, szPlus, CharSizeOf(szPlus));
 
-    if(hk = (WORD)GetWindowLong(hwnd, 0)){
+    if(hk = (WORD)GetWindowLongPtr(hwnd, HWL_HOTKEY)){
         sz[0] = 0;
         cch = 0;
         if (hk & HK_CONTROL){
@@ -149,7 +159,7 @@ void APIENTRY PaintHotKey(register HWND hwnd)
 
     SetBkMode(hdc, TRANSPARENT);
 
-    hFont = SelectObject(hdc,(HANDLE)GetWindowLong(hwnd,4));
+    hFont = SelectObject(hdc,(HANDLE)GetWindowLongPtr(hwnd,HWLP_FONT));
     x = GetSystemMetrics(SM_CXBORDER);
     y = GetSystemMetrics(SM_CYBORDER);
 
@@ -164,7 +174,7 @@ void APIENTRY PaintHotKey(register HWND hwnd)
         SetTextColor(hdc,dwColor);
     }
     else{
-        GrayString(hdc,NULL,NULL,(DWORD)(LPTSTR)sz,cch,x,y,0,0);
+        GrayString(hdc,NULL,NULL,(LPARAM)(LPTSTR)sz,cch,x,y,0,0);
     }
 
 #ifdef ORGCODE
@@ -190,14 +200,14 @@ void APIENTRY PaintHotKey(register HWND hwnd)
 /*** HotKeyWndProc --
  *
  *
- * LONG APIENTRY HotKeyWndProc(register HWND hwnd, UINT wMsg,
- *                                register WPARAM wParam, LONG lParam)
+ * LRESULT APIENTRY HotKeyWndProc(register HWND hwnd, UINT wMsg,
+ *                                register WPARAM wParam, LPARAM lParam)
  *
  * ENTRY -     HWND    hWnd
  *            WORD    wMsg
  *            WPARAM    wParam
- *            LONG    lParam
- * EXIT  -    LONG    xxx - returns info, or zero, for nothing to return
+ *            LPARAM    lParam
+ * EXIT  -    LRESULT xxx - returns info, or zero, for nothing to return
  *
  * SYNOPSIS -  ???
  *
@@ -206,8 +216,8 @@ void APIENTRY PaintHotKey(register HWND hwnd)
  *
  */
 
-LONG APIENTRY HotKeyWndProc(register HWND hwnd, UINT wMsg,
-                             register WPARAM wParam, LONG lParam)
+LRESULT APIENTRY HotKeyWndProc(register HWND hwnd, UINT wMsg,
+                             register WPARAM wParam, LPARAM lParam)
 {
     HDC hdc;
     WORD wT;
@@ -222,12 +232,12 @@ LONG APIENTRY HotKeyWndProc(register HWND hwnd, UINT wMsg,
 
     case WM_SETFOCUS:
         InvalidateRect(hwnd,NULL,TRUE);
-        CreateCaret(hwnd,NULL,0,GetWindowLong(hwnd,8));
+        CreateCaret(hwnd,NULL,0,GetWindowLongPtr(hwnd,HWL_CYFONT));
         ShowCaret(hwnd);
         break;
 
     case WM_KILLFOCUS:
-        if (!LOBYTE(GetWindowLong(hwnd,0))){
+        if (!LOBYTE(GetWindowLongPtr(hwnd,HWL_HOTKEY))){
             SetHotKey(hwnd,0);
         }
         DestroyCaret();
@@ -241,7 +251,7 @@ LONG APIENTRY HotKeyWndProc(register HWND hwnd, UINT wMsg,
         break;
 
     case WM_GETTEXT:
-        *(LPINT)lParam = GetWindowLong(hwnd,0);
+        *(LPINT)lParam = GetWindowLongPtr(hwnd,HWL_HOTKEY);
         break;
 
     case WM_SETHOTKEY:
@@ -249,7 +259,7 @@ LONG APIENTRY HotKeyWndProc(register HWND hwnd, UINT wMsg,
         break;
 
     case WM_GETHOTKEY:
-        return GetWindowLong(hwnd,0);
+        return GetWindowLongPtr(hwnd,HWL_HOTKEY);
 
     case WM_LBUTTONDOWN:
         SetFocus(hwnd);
@@ -309,21 +319,21 @@ LONG APIENTRY HotKeyWndProc(register HWND hwnd, UINT wMsg,
     case WM_CHAR:
     case WM_SYSCHAR:
     case WM_KEYUP:
-    if (!LOBYTE((WORD)GetWindowLong(hwnd,0)))
+    if (!LOBYTE((WORD)GetWindowLongPtr(hwnd,HWL_HOTKEY)))
         SetHotKey(hwnd,0);
     break;
 
 
     case WM_GETFONT:
-        return GetWindowLong(hwnd,4);
+        return GetWindowLongPtr(hwnd,HWLP_FONT);
 
     case WM_SETFONT:
-        lParam = GetWindowLong(hwnd,4);
-        SetWindowLong(hwnd,4,wParam);
+        lParam = GetWindowLongPtr(hwnd,HWLP_FONT);
+        SetWindowLongPtr(hwnd,HWLP_FONT,wParam);
         hdc = GetDC(hwnd);
         wParam = (WPARAM) SelectObject(hdc,(HANDLE)wParam);
         GetTextExtentPoint(hdc, TEXT("C"), 1, &size);
-        SetWindowLong(hwnd, 8, size.cy);
+        SetWindowLongPtr(hwnd, HWL_CYFONT, size.cy);
         if (wParam){
             SelectObject(hdc,(HANDLE)wParam);
         }
@@ -370,7 +380,7 @@ BOOL APIENTRY RegisterHotKeyClass(HANDLE hInstance)
     wc.style = 0;
     wc.lpfnWndProc = HotKeyWndProc;
     wc.cbClsExtra = 0;
-    wc.cbWndExtra = 12;
+    wc.cbWndExtra = sizeof(HOTKEYWINDOWBYTES);
     wc.hInstance = hInstance;
     wc.hIcon = NULL;
     wc.hCursor = NULL;

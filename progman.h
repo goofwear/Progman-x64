@@ -1,40 +1,38 @@
-/*++ BUILD Version: 0002    - Increment this if a change has global effects
+/* * * * * * * *\
+	PROGMAN.H -
+		Copyright (c) 1993,  Microsoft Corporation
+	DESCRIPTION -
+		Include for the Windows Program Manager
+\* * * * * * * */
 
-/****************************************************************************/
-/*                                                                          */
-/*  PROGMAN.H -                                                             */
-/*                                                                          */
-/*      Include for the Windows Program Manager                             */
-/*                                                                          */
-/****************************************************************************/
+// Pragmas
+#pragma once
 
-#if defined(JAPAN) && !defined(UNICODE)    /*  V-KeijiY  June.23.1992 */
-//See routine in progman.c
-#define LoadString _LoadString
-#endif
+#pragma comment(linker,"\"/manifestdependency:type='win32' \
+name='Microsoft.Windows.Common-Controls' version='6.0.0.0' \
+processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
-#ifndef RC_INVOKED
-#include <nt.h>
-#include <ntrtl.h>
-#include <nturtl.h>
-#endif
-
-#include <setjmp.h>
-#include <string.h>
-#include <stdlib.h>
+// Includes
 #include <windows.h>
-#include <winuserp.h>
-
-#ifndef RC_INVOKED
-#include "port1632.h"
-#undef RDW_VALIDMASK
-#endif
-
-#include <pmvdm.h>
-
+#include <Shlobj.h>
+#include "extract.h"
 #include "pmhelp.h"
-#include "shellapi.h"
-#include "shlapip.h"
+
+// Definitions
+#define SheRemoveQuotes PathUnquoteSpaces
+
+// NTSTATUS definitions
+#define STATUS_PAGEFILE_QUOTA            ((NTSTATUS)0xC0000007L)
+#define STATUS_SUCCESS                   ((NTSTATUS)0x00000000L) // ntsubauth
+#define STATUS_BUFFER_TOO_SMALL          ((NTSTATUS)0xC0000023L)
+// SHLAPIP definitions
+#define EXEC_SEPARATE_VDM     0x00000001
+// WINUSERP definitions
+#define WM_LOGOFF                       0x0025
+#define WM_DROPOBJECT                   0x022A
+#define WM_QUERYDROPOBJECT              0x022B
+// NTDDK definitions
+#define SE_SHUTDOWN_PRIVILEGE             (19L)
 
 /*--------------------------------------------------------------------------*/
 /*                                                                          */
@@ -43,64 +41,64 @@
 /*--------------------------------------------------------------------------*/
 
 typedef struct tagITEM {
-    struct tagITEM *pNext;              /* link to next item */
-    int             iItem;              /* index in group */
-    DWORD           dwDDEId;            /* id used for Apps querying Progman */
-                                        /* for its properties via DDE */
-    RECT            rcIcon;             /* icon rectangle */
-    HICON           hIcon;              /* the actual icon */
-    RECT            rcTitle;            /* title rectangle */
+	struct tagITEM *pNext;              /* link to next item */
+	int             iItem;              /* index in group */
+	DWORD           dwDDEId;            /* id used for Apps querying Progman */
+										/* for its properties via DDE */
+	RECT            rcIcon;             /* icon rectangle */
+	HICON           hIcon;              /* the actual icon */
+	RECT            rcTitle;            /* title rectangle */
 } ITEM, *PITEM;
 
 typedef struct tagGROUP {
-    struct tagGROUP *pNext;               /* link to next group            */
-    HWND            hwnd;                 /* hwnd of group window          */
-    HANDLE          hGroup;               /* global handle of group object */
-    PITEM           pItems;               /* pointer to first item         */
-    LPTSTR          lpKey;                /* name of group key             */
-    WORD            wIndex;               /* index in PROGMAN.INI of group */
-    BOOL            fRO;                  /* group file is readonly        */
-    BOOL            fCommon;              /* group is a common group vs a personal group */
-    FILETIME        ftLastWriteTime;
-    HBITMAP         hbm;                  /* bitmap 'o icons               */
-    WORD            fLoaded;
-    PSECURITY_DESCRIPTOR pSecDesc;
+	struct tagGROUP *pNext;               /* link to next group            */
+	HWND            hwnd;                 /* hwnd of group window          */
+	HANDLE          hGroup;               /* global handle of group object */
+	PITEM           pItems;               /* pointer to first item         */
+	LPTSTR          lpKey;                /* name of group key             */
+	WORD            wIndex;               /* index in PROGMAN.INI of group */
+	BOOL            fRO;                  /* group file is readonly        */
+	BOOL            fCommon;              /* group is a common group vs a personal group */
+	FILETIME        ftLastWriteTime;
+	HBITMAP         hbm;                  /* bitmap 'o icons               */
+	WORD            fLoaded;
+	PSECURITY_DESCRIPTOR pSecDesc;
 } GROUP, *PGROUP;
 
 /*
  * .GRP File format structures -
  */
 typedef struct tagGROUPDEF {
-    DWORD   dwMagic;        /* magical bytes 'PMCC' */
-    DWORD   cbGroup;        /* length of group segment */
-    RECT    rcNormal;       /* rectangle of normal window */
-    POINT   ptMin;          /* point of icon */
-    WORD    wCheckSum;      /* adjust this for zero sum of file */
-    WORD    nCmdShow;       /* min, max, or normal state */
-    DWORD   pName;          /* name of group */
-                            /* these four change interpretation */
-    WORD    cxIcon;         /* width of icons */
-    WORD    cyIcon;         /* hieght of icons */
-    WORD    wIconFormat;    /* planes and BPP in icons */
-    WORD    wReserved;      /* This word is no longer used. */
+	DWORD   dwMagic;        /* magical bytes 'PMCC' */
+	DWORD   cbGroup;        /* length of group segment */
+	RECT    rcNormal;       /* rectangle of normal window */
+	POINT   ptMin;          /* point of icon */
+	WORD    wCheckSum;      /* adjust this for zero sum of file */
+	WORD    nCmdShow;       /* min, max, or normal state */
+	DWORD   pName;          /* name of group */
+							/* these four change interpretation */
+	WORD    cxIcon;         /* width of icons */
+	WORD    cyIcon;         /* hieght of icons */
+	WORD    wIconFormat;    /* planes and BPP in icons */
+	WORD    wReserved;      /* This word is no longer used. */
 
-    WORD    cItems;         /* number of items in group */
-    WORD    Reserved1;
-    DWORD   Reserved2;
-    DWORD   rgiItems[1];    /* array of ITEMDEF offsets */
+	WORD    cItems;         /* number of items in group */
+	WORD    Reserved1;
+	DWORD   Reserved2;
+	DWORD   rgiItems[1];    /* array of ITEMDEF offsets */
 } GROUPDEF, *PGROUPDEF;
 typedef GROUPDEF *LPGROUPDEF;
 
 typedef struct tagITEMDEF {
-    POINT   pt;             /* location of item icon in group */
-    WORD    iIcon;          /* id of item icon */
-    WORD    wIconVer;       /* icon version */
-    WORD    cbIconRes;      /* size of icon resource */
-    WORD    wIconIndex;     /* index of the item icon (not the same as the id) */
-    DWORD   pIconRes;       /* offset of icon resource */
-    DWORD   pName;          /* offset of name string */
-    DWORD   pCommand;       /* offset of command string */
-    DWORD   pIconPath;      /* offset of icon path */
+	POINT   pt;             /* location of item icon in group */
+	WORD    iIcon;          /* id of item icon */
+	WORD    wIconVer;       /* icon version */
+	WORD    cbIconRes;      /* size of icon resource */
+	WORD    wIconIndex;     /* index of the item icon (not the same as the id) */
+	DWORD   pIconRes;       /* offset of icon resource */
+	DWORD   pName;          /* offset of name string */
+	DWORD   pCommand;       /* offset of command string */
+	DWORD   pIconPath;      /* offset of icon path */
 } ITEMDEF, *PITEMDEF;
 typedef ITEMDEF *LPITEMDEF;
 
@@ -133,58 +131,58 @@ typedef ITEMDEF *LPITEMDEF;
 
 typedef struct _tag
   {
-    WORD wID;                   // tag identifier
-    WORD dummy1;                // need this for alignment!
-    int wItem;                  // (unde the covers 32 bit point!)item the tag belongs to
-    WORD cb;                    // size of record, including id and count
-    WORD dummy2;                // need this for alignment!
-    BYTE rgb[1];
+	WORD wID;                   // tag identifier
+	WORD dummy1;                // need this for alignment!
+	int wItem;                  // (unde the covers 32 bit point!)item the tag belongs to
+	WORD cb;                    // size of record, including id and count
+	WORD dummy2;                // need this for alignment!
+	BYTE rgb[1];
   } PMTAG, FAR * LPPMTAG;
 
 #define PMTAG_MAGIC GROUP_MAGIC
 
-    /* range 8000 - 80FF > global
-     * range 8100 - 81FF > per item
-     * all others reserved
-     */
+	/* range 8000 - 80FF > global
+	 * range 8100 - 81FF > per item
+	 * all others reserved
+	 */
 
 #define ID_MAINTAIN             0x8000
-    /* bit used to indicate a tag that should be kept even if the writer
-     * doesn't recognize it.
-     */
+	/* bit used to indicate a tag that should be kept even if the writer
+	 * doesn't recognize it.
+	 */
 
 #define ID_MAGIC                0x8000
-    /* data: the string 'TAGS'
-     */
+	/* data: the string 'TAGS'
+	 */
 
 #define ID_WRITERVERSION        0x8001
-    /* data: string in the form [9]9.99[Z].99
-     */
+	/* data: string in the form [9]9.99[Z].99
+	 */
 
 #define ID_APPLICATIONDIR       0x8101
-    /* data: ASCIZ string of directory where application may be
-     * located.
-     * this is defined as application dir rather than default dir
-     * since the default dir is explicit in the 3.0 command line and
-     * must stay there.  The true "new information" is the application
-     * directory.  If not present, search the path.
-     */
+	/* data: ASCIZ string of directory where application may be
+	 * located.
+	 * this is defined as application dir rather than default dir
+	 * since the default dir is explicit in the 3.0 command line and
+	 * must stay there.  The true "new information" is the application
+	 * directory.  If not present, search the path.
+	 */
 
 #define ID_HOTKEY               0x8102
-    /* data: WORD hotkey index
-     */
+	/* data: WORD hotkey index
+	 */
 
 #define ID_MINIMIZE             0x8103
-    /* data none
-     */
+	/* data none
+	 */
 
 #define ID_NEWVDM               0x8104
-    /* data none
-     */
+	/* data none
+	 */
 
 #define ID_LASTTAG              0xFFFF
-    /* the last tag in the file
-     */
+	/* the last tag in the file
+	 */
 
 
 /*--------------------------------------------------------------------------*/
@@ -193,10 +191,10 @@ typedef struct _tag
 /*                                                                          */
 /*--------------------------------------------------------------------------*/
 
-typedef struct _MyIconInfo {
-    HICON hIcon;
-    INT iIconId;
-} MYICONINFO, *LPMYICONINFO;
+// typedef struct _MyIconInfo {
+//     HICON hIcon;
+//     INT iIconId;
+// } MYICONINFO, *LPMYICONINFO;
 
 /*--------------------------------------------------------------------------*/
 /*                                                                          */
@@ -213,15 +211,11 @@ BOOL  FAR PASCAL AppInit(HANDLE, LPTSTR , int);
 void  FAR PASCAL BuildDescription(LPTSTR, LPTSTR);
 WORD  FAR PASCAL ExecProgram(LPTSTR, LPTSTR, LPTSTR, BOOL, DWORD, WORD, BOOL);
 void  FAR PASCAL ExecItem(PGROUP,PITEM,BOOL,BOOL);
-WORD  FAR PASCAL SelectionType(void);
-BOOL  APIENTRY ProgmanCommandProc(HWND, WPARAM, LONG);
+WORD  APIENTRY SelectionType(VOID);
+BOOL  APIENTRY ProgmanCommandProc(HWND, WPARAM, LPARAM);
 void  FAR PASCAL WriteINIFile(void);
 void  FAR PASCAL ArrangeItems(HWND);
-void  FAR PASCAL WriteGroupsSection(void);
-LONG  APIENTRY DDEMsgProc(HWND, UINT, WPARAM, LONG);
-LONG  APIENTRY AppIconDDEMsgProc(HWND, UINT, WPARAM, LONG);
-LONG  APIENTRY AppDescriptionDDEMsgProc(HWND, UINT, WPARAM, LONG);
-LONG  APIENTRY AppWorkingDirDDEMsgProc(HWND, UINT, WPARAM, LONG);
+void  PASCAL WriteGroupsSection(VOID);
 
 BOOL FAR PASCAL IsGroupReadOnly(LPTSTR szGroupKey, BOOL bCommonGroup);
 LPGROUPDEF FAR PASCAL LockGroup(HWND);
@@ -252,66 +246,60 @@ PITEM FAR PASCAL DuplicateItem(PGROUP,PITEM,PGROUP,LPPOINT);
 
 void  FAR PASCAL GetItemCommand(PGROUP,PITEM,LPTSTR,LPTSTR);
 
-VOID  APIENTRY RegisterDDEClasses(HANDLE);
 INT MyDwordAlign(INT);
 
-LONG  APIENTRY GroupWndProc(HWND , UINT, WPARAM, LONG);
-LONG  APIENTRY ProgmanWndProc(HWND , UINT , WPARAM,  LONG );
-WORD  FAR PASCAL MyDialogBox(WORD, HWND , FARPROC );
+LRESULT APIENTRY GroupWndProc(HWND , UINT, WPARAM, LPARAM);
+LRESULT APIENTRY ProgmanWndProc(HWND , UINT , WPARAM,  LPARAM );
+WORD  FAR PASCAL MyDialogBox(WORD, HWND , DLGPROC );
 
-LONG  APIENTRY ChooserDlgProc(HWND , UINT , WPARAM , LONG );
-LONG  APIENTRY BrowseDlgProc(HWND, UINT , WPARAM , LONG );
-LONG  APIENTRY RunDlgProc(HWND , UINT , WPARAM , LONG );
-LONG  APIENTRY ExitDlgProc(HWND, UINT, WPARAM, LONG);
-LONG  APIENTRY IconDlgProc(HWND , UINT , WPARAM , LONG );
-LONG  APIENTRY NewItemDlgProc(HWND , UINT , WPARAM , LONG );
-LONG  APIENTRY NewGroupDlgProc(HWND , UINT , WPARAM , LONG );
-LONG  APIENTRY MoveItemDlgProc(HWND , UINT , WPARAM , LONG );
-LONG  APIENTRY CopyItemDlgProc(HWND , UINT , WPARAM , LONG );
-LONG  APIENTRY EditItemDlgProc(HWND , UINT , WPARAM , LONG );
-LONG  APIENTRY EditGroupDlgProc(HWND, UINT , WPARAM , LONG );
-LONG  APIENTRY AboutDlgProc(HWND , UINT , WPARAM , LONG );
-BOOL  APIENTRY HotKeyDlgProc(HWND , UINT , WPARAM , LONG );
-BOOL  APIENTRY ShutdownDialog(HANDLE, HWND);
-LONG  APIENTRY NewLogoffDlgProc(HWND, UINT, WPARAM, LONG);
-LONG  APIENTRY UpdateGroupsDlgProc(HWND, UINT, WPARAM, LONG);
+INT_PTR APIENTRY ChooserDlgProc(HWND , UINT , WPARAM , LPARAM );
+INT_PTR APIENTRY BrowseDlgProc(HWND, UINT , WPARAM , LPARAM );
+INT_PTR APIENTRY NewItemDlgProc(HWND , UINT , WPARAM , LPARAM );
+INT_PTR APIENTRY NewGroupDlgProc(HWND , UINT , WPARAM , LPARAM );
+INT_PTR APIENTRY MoveItemDlgProc(HWND , UINT , WPARAM , LPARAM );
+INT_PTR APIENTRY CopyItemDlgProc(HWND , UINT , WPARAM , LPARAM );
+INT_PTR APIENTRY EditItemDlgProc(HWND , UINT , WPARAM , LPARAM );
+INT_PTR APIENTRY EditGroupDlgProc(HWND, UINT , WPARAM , LPARAM );
+INT_PTR APIENTRY HotKeyDlgProc(HWND , UINT , WPARAM , LPARAM );
+INT_PTR APIENTRY UpdateGroupsDlgProc(HWND, UINT, WPARAM, LPARAM);
+BOOL ActivateCommonContextMenu(HWND hwnd, UINT uiHitType, WPARAM wParam, LPARAM lParam);
 VOID  APIENTRY HandleDosApps
-    (
-    LPTSTR sz  // Full path sans arguments.
-    );
+	(
+	LPTSTR sz  // Full path sans arguments.
+	);
 DWORD  APIENTRY ValidatePath
-    (
-    HWND hDlg,
-    LPTSTR szPath,        // Path to item
-    LPTSTR szExePath,     // Path to associated exe.
-    LPTSTR szDir          // Path to working directory.
-    );
+	(
+	HWND hDlg,
+	LPTSTR szPath,        // Path to item
+	LPTSTR szExePath,     // Path to associated exe.
+	LPTSTR szDir          // Path to working directory.
+	);
 VOID APIENTRY GetDirectoryFromPath
-    (
-    LPTSTR szFilePath,    // Full path to a file.
-    LPTSTR szDir          // Directory returned in here, the buffer is assumed
-                        // to be as big as szFilePath.
-    );
+	(
+	LPTSTR szFilePath,    // Full path to a file.
+	LPTSTR szDir          // Directory returned in here, the buffer is assumed
+						// to be as big as szFilePath.
+	);
 VOID APIENTRY GetFilenameFromPath
-    (
-    LPTSTR szPath,
-    LPTSTR szFilename
-    );
+	(
+	LPTSTR szPath,
+	LPTSTR szFilename
+	);
 void APIENTRY TagExtension
-    (
-    LPTSTR szPath,
-    UINT cbPath
-    );
+	(
+	LPTSTR szPath,
+	UINT cbPath
+	);
 void APIENTRY StripArgs
-    (
-    LPTSTR szCmmdLine     // A command line.
-    );
+	(
+	LPTSTR szCmmdLine     // A command line.
+	);
 BOOL APIENTRY ValidPathDrive
-    (
-    LPTSTR lpstr
-    );
+	(
+	LPTSTR lpstr
+	);
 
-int  APIENTRY MessageFilter(int , WPARAM , LPMSG) ;
+LRESULT APIENTRY MessageFilter(int , WPARAM , LPARAM) ;
 
 BOOL APIENTRY SaveGroup(HWND, BOOL);
 BOOL SaveGroupsContent(BOOL);
@@ -351,7 +339,7 @@ VOID APIENTRY SaveRecentFileList (HWND hwnd, LPTSTR szCurrentFile, WORD idContro
 #define MAXITEMNAMELEN          40
 //#define MAXITEMPATHLEN          64+16+48 /* Path + 8.3 + Drive(colon) + arguments */
 #define MAXITEMPATHLEN          MAX_PATH - 1 // -1 for backward compatibility
-                                             // with shell32.dll
+											 // with shell32.dll
 #define MAXGROUPNAMELEN         30
 
 #define NSLOTS                  16        /* initial number of items entries */
@@ -383,22 +371,22 @@ VOID APIENTRY SaveRecentFileList (HWND hwnd, LPTSTR szCurrentFile, WORD idContro
 #define MSDOSICON               11
 #define PMACCELS                1004
 #define PROGMANMENU             1005
-#define GROUPICON               146
+#define GROUPICON               147
 
 #define DOSAPPICONINDEX         1
 #define ITEMICONINDEX           6
 
 #define ITEMLISTBOX             1
 
-#define GWL_PGROUP              0       // Used in the Group window frames
+#define GWLP_PGROUP             0       // Used in the Group window frames
 #define GWL_EXITING             0       // Used in the main window frame
 
 #define DRAG_SWP                1
 #define DRAG_COPY               2
 
 /* DDE Messaging Stuff */
-#define ACK_POS                 0x8000
-#define ACK_NEG                 0x0000
+// #define ACK_POS                 0x8000
+// #define ACK_NEG                 0x0000
 
 // message sent to indicate another instance has been exec'd
 #define WM_EXECINSTANCE         (WM_USER+100)
@@ -424,39 +412,43 @@ VOID APIENTRY SaveRecentFileList (HWND hwnd, LPTSTR szCurrentFile, WORD idContro
 #define MAXFILES_ENTRY L"Max Files"
 #define FILE_ENTRY L"File%lu"
 
+/* Hotkey Defines */
+#define HOTKEY_TASKMAN			1
+#define HOTKEY_RUNFILE			101
 
 /* Menu Command Defines */
-#define IDM_FILE                0
-#define IDM_NEW                 101
-#define IDM_OPEN                102
-#define IDM_MOVE                103
-#define IDM_COPY                104
-#define IDM_DELETE              105
-#define IDM_PROPS               106
-#define IDM_RUN                 107
-#define IDM_EXIT                108
+#define IDM_FILE				0
+#define IDM_NEW					101
+#define IDM_OPEN				102
+#define IDM_MOVE				103
+#define IDM_COPY				104
+#define IDM_DELETE				105
+#define IDM_PROPS				106
+#define IDM_RUN					107
+#define IDM_EXIT				108
 #define IDM_SAVE                109
-#define IDM_SHUTDOWN            110
-#define IDM_OPTIONS             1
-#define IDM_AUTOARRANGE         201
-#define IDM_MINONRUN            202
-#define IDM_HOTKEY              203
-#define IDM_SAVESETTINGS        204
-#define IDM_SAVENOW             205
-#define IDM_ANSIGROUPS          206
-#define IDM_WINDOW              2
-#define IDM_CASCADE             301
-#define IDM_TILE                302
-#define IDM_ARRANGEICONS        303
+#define IDM_TASKMGR				110
+#define IDM_SHUTDOWN			111
+#define IDM_OPTIONS				1
+#define IDM_AUTOARRANGE			201
+#define IDM_MINONRUN			202
+#define IDM_HOTKEY				203
+#define IDM_SAVESETTINGS		204
+#define IDM_SAVENOW				205
+#define IDM_ANSIGROUPS			206
+#define IDM_WINDOW				2
+#define IDM_CASCADE				301
+#define IDM_TILE				302
+#define IDM_TILEHORIZONTALLY	304
+#define IDM_ARRANGEICONS		303
 
 #define IDM_CHILDSTART          310
 
-#define IDM_HELP                3
-#define IDM_HELPINDEX           401
-#define IDM_HELPHELP            402
-#define IDM_ABOUT               403
-#define IDM_HELPSEARCH          404
-
+#define IDM_HELP				3
+#define IDM_HELPINDEX			401
+#define IDM_HELPHELP			402
+#define IDM_ABOUT				403
+#define IDM_HELPSEARCH			404
 
 /* StringTable Defines */
 #define IDS_APPTITLE            1
@@ -526,8 +518,8 @@ VOID APIENTRY SaveRecentFileList (HWND hwnd, LPTSTR szCurrentFile, WORD idContro
 #define IDS_WINHELPERR          139
 #define IDS_PIFADDINFO          140
 
-#define IDS_BADPATHMSG2		    141
-#define IDS_BADPATHMSG3		    142
+#define IDS_BADPATHMSG2	        141
+#define IDS_BADPATHMSG3	        142
 #define IDS_LOWMEMONEXIT        143
 #define IDS_WININIERR           144
 #define IDS_STARTUPERR          145
@@ -552,27 +544,23 @@ VOID APIENTRY SaveRecentFileList (HWND hwnd, LPTSTR szCurrentFile, WORD idContro
 #define IDS_COMMONGROUPERR      169
 #define IDS_NOCOMMONGRPS        170
 
-#define IDS_NO_PERMISSION_SHUTDOWN 171
-#define IDS_SHUTDOWN_MESSAGE    172
-
-
 #define IDS_DEFAULTSTARTUP      173
 #define IDS_TOOMANYCOMMONGROUPS 174
 
-#define IDS_LOGOFF              175
-#define IDS_SHUTDOWN            176
+#define IDS_TASKMGR				175
+#define IDS_SHUTDOWN			176
+#define IDS_RUN					177
 
-#define IDS_MSGBOXSTR1          177
-#define IDS_MSGBOXSTR2          178
+#define IDS_MSGBOXSTR1          178
+#define IDS_MSGBOXSTR2          179
 
-#define IDS_INSUFFICIENTQUOTA   179
+#define IDS_INSUFFICIENTQUOTA   180
 
-#define IDS_ANSIGROUPSMENU      180
+#define IDS_ANSIGROUPSMENU      181
 
-#ifdef JAPAN
-#define IDS_BADPORTPATHTITLE    1102
-#define IDS_BADPORTPATHMSG      1103
-#endif //JAPAN
+// Definitions for context menu
+#define IDCM_ITEM		1
+#define IDCM_GROUP		2
 
 #include "pmdlg.h"
 #include "pmreg.h"
@@ -701,10 +689,6 @@ extern HHOOK        hhkMsgFilter;
 extern TCHAR        szProgmanHelp[];
 
 extern BOOL         bUseANSIGroups;
-
-#ifndef DBCS
-#define IsDBCSLeadByte(x) (FALSE)
-#endif
 
 extern PSECURITY_ATTRIBUTES pSecurityAttributes;
 extern PSECURITY_ATTRIBUTES pAdminSecAttr;

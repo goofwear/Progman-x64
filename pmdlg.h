@@ -37,10 +37,8 @@
 #define IDD_CURICON		   126
 #define IDD_HELP		   127
 #define IDD_GROUP          128
-#define IDD_LOGOFF         130
-#define IDD_SHUTDOWN       131
-#define IDOK2              132
-#define IDCANCEL2          133
-#define IDD_NEWVDM         134
+#define IDOK2              130
+#define IDCANCEL2          131
+#define IDD_NEWVDM         132
 
-#include "..\..\gina\winlogon\shutdown.h"
+// #include "shutdown.h"

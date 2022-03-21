@@ -25,16 +25,12 @@
  *
  */
 
-
-#include <io.h>
-#include <string.h>
-#include <ctype.h>
+// Includes
 #include <windows.h>
-#include <port1632.h>
 
 #if DBG
 
-#define KdPrint(_x_) OutputDebugStringA _x_;
+// #define KdPrint(_x_) OutputDebugStringA _x_;
 
 #else
 
@@ -43,72 +39,6 @@
 #endif
 
 #define LOCALBUFFERSIZE 128
-
-
-/*** PathType --        Determines if string denotes a directory or not.
- *
- *
- *
- * BOOL PathType(LPSTR pszFileString)
- *
- * ENTRY -      LPSTR pszFileString     - pointer to string to use to determine if directory
- *                                                               or not.
- *                                                window, with focus.
- * EXIT  -      int iReturnValue        - 2 = is directory   1 = Is Not directory
- *
- * SYNOPSIS -  This function takes a pointer to a string, calls OS to determine
- *                              if string is, or is not a directory.
- * WARNINGS -  Cna't even see where this is called!
- * EFFECTS  -
- *
- */
-
-
-BOOL PathType(LPTSTR lpszFileString)
-{
-
-        LPTSTR   lpszLocalBuffer;                                /*local buffer for AnsiToOem()*/
-        DWORD   dwReturnedAttributes;
-        DWORD   nBufferLength;
-
-        nBufferLength = lstrlen(lpszFileString) + 1;
-        /*alloc local, non-moveable, zero filled buffer*/
-        lpszLocalBuffer = (LPTSTR)LocalAlloc(0, sizeof(TCHAR)*nBufferLength);
-        if(lpszLocalBuffer == NULL){
-                KdPrint(("<PathType> LocalAlloc FAILed\n"));
-        }
-
-#ifdef UNICODE
-        lstrcpy(lpszLocalBuffer,lpszFileString);
-#else
-        CharToOem(lpszFileString, lpszLocalBuffer);
-#endif
-
-        /*get attributes of filestring*/
-        dwReturnedAttributes = GetFileAttributes(lpszLocalBuffer);
-        if(dwReturnedAttributes == -1){
-                KdPrint(("<PathType> - GetFileAttributes() FAILed!\n"));
-                LocalFree(lpszLocalBuffer);
-                return(0);
-        }
-        else{
-                /*and with directory attribute*/
-                dwReturnedAttributes = dwReturnedAttributes & FILE_ATTRIBUTE_DIRECTORY;
-                switch(dwReturnedAttributes){
-
-                        case FILE_ATTRIBUTE_DIRECTORY:
-                                LocalFree(lpszLocalBuffer);
-                                return(2);
-                                break;
-
-                        default:
-                                LocalFree(lpszLocalBuffer);
-                                return(1);
-                }
-
-        }
-
-}
 
 
 /*** FileTime --        Gets time of last modification.
@@ -132,24 +62,24 @@ BOOL PathType(LPTSTR lpszFileString)
 DWORD FileTime(
     HFILE hFile)
 {
-        BOOL            bReturnCode;
-        FILETIME        CreationTime;
-        FILETIME        LastAccessTime;
-        FILETIME        LastWriteTime;
-        WORD            FatTime;
-        WORD            FatDate;
+    BOOL            bReturnCode;
+    FILETIME        CreationTime;
+    FILETIME        LastAccessTime;
+    FILETIME        LastWriteTime;
+    WORD            FatTime;
+    WORD            FatDate;
 
-        bReturnCode = GetFileTime((HANDLE)hFile, &CreationTime, &LastAccessTime,
-            &LastWriteTime);
+    bReturnCode = GetFileTime((HANDLE)hFile, &CreationTime, &LastAccessTime,
+        &LastWriteTime);
 
-        /*
-     * Test return code
-     */
-        if (bReturnCode == FALSE) {
-                return 0;               /*set to zero, for error*/
-        }
+    /*
+    * Test return code
+    */
+    if (bReturnCode == FALSE) {
+            return 0;               /*set to zero, for error*/
+    }
 
-        /*
+    /*
      * Now convert 64bit time to DOS 16bit time
      */
         FileTimeToDosDateTime( &LastWriteTime, &FatDate, &FatTime);

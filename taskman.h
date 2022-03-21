@@ -2,25 +2,67 @@
 // a meaningful way.
 
 #ifndef RC_INVOKED
-#include <nt.h>
-#include <ntrtl.h>
-#include <nturtl.h>
+// #include <nt.h>
+// #include <ntrtl.h>
+// #include <nturtl.h>
 #endif
 
-#include <windows.h>
-#include <winuserp.h>
+#include "progman.h"
+// #include <winuserp.h>
+
+// WINUSERP.H
+BOOL
+WINAPI
+RegisterTasklist(
+    IN HWND hWndTasklist);
+
+// ntddk
+typedef enum _PROCESSINFOCLASS {
+	ProcessBasicInformation,
+	ProcessQuotaLimits,
+	ProcessIoCounters,
+	ProcessVmCounters, // VM_COUNTERS_EX
+	ProcessTimes,
+	ProcessBasePriority,
+	ProcessRaisePriority,
+	ProcessDebugPort,
+	ProcessExceptionPort,
+	ProcessAccessToken,
+	ProcessLdtInformation,
+	ProcessLdtSize,
+	ProcessDefaultHardErrorMode,
+	ProcessIoPortHandlers,          // Note: this is kernel mode only
+	ProcessPooledUsageAndLimits,
+	ProcessWorkingSetWatch,
+	ProcessUserModeIOPL,
+	ProcessEnableAlignmentFaultFixup,
+	ProcessPriorityClass,
+	ProcessWx86Information,
+	ProcessHandleCount,
+	ProcessAffinityMask,
+	ProcessPriorityBoost,
+	ProcessDeviceMap,
+	ProcessSessionInformation,
+	ProcessForegroundInformation,
+	ProcessWow64Information,
+	ProcessImageFileName,
+	ProcessLUIDDeviceMapsEnabled,
+	ProcessBreakOnTermination,
+	ProcessDebugObjectHandle,
+	ProcessDebugFlags,
+	ProcessHandleTracing,
+	MaxProcessInfoClass                             // MaxProcessInfoClass should always be the last enum
+} PROCESSINFOCLASS;
 
 // Taskman prototyes
 
-LONG APIENTRY TaskmanDlgProc(HWND hDlg, UINT wMsg, WPARAM wParam, LONG lParam);
+INT_PTR APIENTRY TaskmanDlgProc(HWND hDlg, UINT wMsg, WPARAM wParam, LPARAM lParam);
 WORD APIENTRY TMExecProgram(LPTSTR lpszPath, LPTSTR lpDir, LPTSTR lpTitle);
 
-VOID GetPathInfo(PTSTR szPath,PTSTR *pszFileName,PTSTR *pszExt,WORD *pich,BOOL *pfUnc);
-VOID GetFilenameFromPath(PTSTR szPath, PTSTR szFilename);
-VOID GetDirectoryFromPath(PTSTR szFilePath, PTSTR szDir);
+void APIENTRY GetPathInfo(LPTSTR szPath, LPTSTR*pszFileName, LPTSTR*pszExt, WORD *pich, BOOL *pfUnc);
 BOOL TestTokenForAdmin(HANDLE Token);
 
-WINUSERAPI VOID SwitchToThisWindow(HWND, BOOL);
+// WINUSERAPI VOID SwitchToThisWindow(HWND, BOOL);
 INT TMMessageBox(HWND hWnd,WORD idTitle,WORD idMessage,PTSTR psz,WORD wStyle);
 
 // Taskman global variables

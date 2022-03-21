@@ -21,11 +21,10 @@
 
 HANDLE CreateNewGroupFromAnsiGroup(LPGROUPDEF_A lpGroupORI)
 {
-    HANDLE      hT;
+    HANDLE      hT = NULL;
     LPGROUPDEF  lpgd;
     int         i;
     int         cb;
-    DWORD       status = 0;
     int         cItems;          // number of items in 16bit group
     LPSTR       pGroupName;      // 32bit group name
     LPTSTR      pGroupNameUNI = NULL;   // 32bit UNICODE group name
@@ -38,65 +37,60 @@ HANDLE CreateNewGroupFromAnsiGroup(LPGROUPDEF_A lpGroupORI)
     //
     // convert pGroupName to unicode here
     //
-    cchMultiByte=MultiByteToWideChar(CP_ACP,MB_PRECOMPOSED,pGroupName,
-            -1,pGroupNameUNI,cchWideChar) ;
+    cchMultiByte=MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, pGroupName, -1, pGroupNameUNI, cchWideChar);
 
-    pGroupNameUNI = LocalAlloc(LPTR,(++cchMultiByte)*sizeof(TCHAR)) ;
+    pGroupNameUNI = LocalAlloc(LPTR,(++cchMultiByte)*sizeof(TCHAR));
+    if (pGroupNameUNI)
+    {
+        MultiByteToWideChar(CP_ACP,MB_PRECOMPOSED, pGroupName, -1, pGroupNameUNI, cchMultiByte);
 
-    MultiByteToWideChar(CP_ACP,MB_PRECOMPOSED,pGroupName,
-            -1,pGroupNameUNI,cchMultiByte) ;
+
+        wGroupNameLen = MyDwordAlign(sizeof(TCHAR)*(lstrlen(pGroupNameUNI) + 1));
+        cItems = lpGroupORI->cItems;
+        cb = sizeof(GROUPDEF) + (cItems * sizeof(DWORD)) +  wGroupNameLen;
+
+        //
+        // In CreateNewGroup before GlobalAlloc.
+        //
+        hT = GlobalAlloc(GHND, (DWORD)cb);
+        if (hT) 
+        {
+            lpgd = (LPGROUPDEF)GlobalLock(hT);
+
+            //
+            // use the NT 1.0 group settings for what we can.
+            //
+            lpgd->nCmdShow = lpGroupORI->nCmdShow;
+            lpgd->wIconFormat = lpGroupORI->wIconFormat;
+            lpgd->cxIcon = lpGroupORI->cxIcon;
+            lpgd->cyIcon = lpGroupORI->cyIcon;
+            lpgd->ptMin.x = (INT)lpGroupORI->ptMin.x;
+            lpgd->ptMin.y = (INT)lpGroupORI->ptMin.y;
+            CopyRect(&(lpgd->rcNormal),&(lpGroupORI->rcNormal));
 
 
-    wGroupNameLen = MyDwordAlign(sizeof(TCHAR)*(lstrlen(pGroupNameUNI) + 1));
-    cItems = lpGroupORI->cItems;
-    cb = sizeof(GROUPDEF) + (cItems * sizeof(DWORD)) +  wGroupNameLen;
+            lpgd->dwMagic = GROUP_UNICODE;
+            lpgd->cbGroup = (DWORD)cb;
+            lpgd->pName = sizeof(GROUPDEF) + cItems * sizeof(DWORD);
 
-    //
-    // In CreateNewGroup before GlobalAlloc.
-    //
-    hT = GlobalAlloc(GHND, (DWORD)cb);
-    if (!hT) {
-        goto Exit;
+            lpgd->Reserved1 = (WORD)-1;
+            lpgd->Reserved2 = (DWORD)-1;
+
+            lpgd->cItems = (WORD)cItems;
+
+            for (i = 0; i < cItems; i++) 
+            {
+                lpgd->rgiItems[i] = 0;
+            }
+
+            lstrcpy((LPTSTR)((LPSTR)lpgd + sizeof(GROUPDEF) + cItems * sizeof(DWORD)),
+                    pGroupNameUNI); // lhb tracks
+            LocalFree(pGroupNameUNI);
+
+            GlobalUnlock(hT);
+        }
     }
-
-    lpgd = (LPGROUPDEF)GlobalLock(hT);
-
-    //
-    // use the NT 1.0 group settings for what we can.
-    //
-    lpgd->nCmdShow = lpGroupORI->nCmdShow;
-    lpgd->wIconFormat = lpGroupORI->wIconFormat;
-    lpgd->cxIcon = lpGroupORI->cxIcon;
-    lpgd->cyIcon = lpGroupORI->cyIcon;
-    lpgd->ptMin.x = (INT)lpGroupORI->ptMin.x;
-    lpgd->ptMin.y = (INT)lpGroupORI->ptMin.y;
-    CopyRect(&(lpgd->rcNormal),&(lpGroupORI->rcNormal));
-
-
-    lpgd->dwMagic = GROUP_UNICODE;
-    lpgd->cbGroup = (DWORD)cb;
-    lpgd->pName = sizeof(GROUPDEF) + cItems * sizeof(DWORD);
-
-    lpgd->Reserved1 = (WORD)-1;
-    lpgd->Reserved2 = (DWORD)-1;
-
-    lpgd->cItems = cItems;
-
-    for (i = 0; i < cItems; i++) {
-        lpgd->rgiItems[i] = 0;
-    }
-
-    lstrcpy((LPTSTR)((LPSTR)lpgd + sizeof(GROUPDEF) + cItems * sizeof(DWORD)),
-            pGroupNameUNI); // lhb tracks
-    LocalFree(pGroupNameUNI);
-
-    GlobalUnlock(hT);
-    return(hT);
-
-Exit:
-    if (status) {
-        return NULL;
-    }
+    return hT;
 }
 
 DWORD AddThing_A(HANDLE hGroup, LPSTR lpStuff, WORD cbStuff)
@@ -158,7 +152,7 @@ int ConvertToUnicodeGroup(LPGROUPDEF_A lpGroupORI, LPHANDLE lphNewGroup)
     int i;
     INT cchMultiByte;
     INT cchWideChar;
-    LPTSTR lpTagValueUNI;
+    LPTSTR lpTagValueUNI = NULL;
     BOOL bAlloc = FALSE;
 
     hNewGroup = CreateNewGroupFromAnsiGroup(lpGroupORI);
@@ -182,7 +176,7 @@ int ConvertToUnicodeGroup(LPGROUPDEF_A lpGroupORI, LPHANDLE lphNewGroup)
         //
         offset = AddThing(hNewGroup, NULL, sizeof(ITEMDEF));
         if (!offset) {
-            KdPrint(("ConvGrp: Addthing ITEMDEF failed for item %d \n", i));
+            // KdPrint(("ConvGrp: Addthing ITEMDEF failed for item %d \n", i));
             goto QuitThis;
         }
 
@@ -205,7 +199,7 @@ int ConvertToUnicodeGroup(LPGROUPDEF_A lpGroupORI, LPHANDLE lphNewGroup)
 
         offset = AddThing_A(hNewGroup, lpT, 0);
         if (!offset) {
-            KdPrint(("ConvGrp: Addthing pName failed for item %d \n", i));
+            // KdPrint(("ConvGrp: Addthing pName failed for item %d \n", i));
             goto PuntCreation;
         }
         lpgd = (LPGROUPDEF)GlobalLock(hNewGroup);
@@ -219,7 +213,7 @@ int ConvertToUnicodeGroup(LPGROUPDEF_A lpGroupORI, LPHANDLE lphNewGroup)
         lpT = (LPSTR)PTR(lpGroupORI, ((LPITEMDEF_A)lpid_A)->pCommand);
         offset = AddThing_A(hNewGroup, lpT, 0);
         if (!offset) {
-            KdPrint(("ConvGrp: Addthing pCommand failed for item %d \n", i));
+            // KdPrint(("ConvGrp: Addthing pCommand failed for item %d \n", i));
             goto PuntCreation;
         }
         lpgd = (LPGROUPDEF)GlobalLock(hNewGroup);
@@ -233,7 +227,7 @@ int ConvertToUnicodeGroup(LPGROUPDEF_A lpGroupORI, LPHANDLE lphNewGroup)
         lpT = (LPSTR)PTR(lpGroupORI, ((LPITEMDEF_A)lpid_A)->pIconPath);
         offset = AddThing_A(hNewGroup, lpT, 0);
         if (!offset) {
-            KdPrint(("ConvGrp: Addthing pIconPath failed for item %d \n", i));
+            // KdPrint(("ConvGrp: Addthing pIconPath failed for item %d \n", i));
             goto PuntCreation;
         }
         lpgd = (LPGROUPDEF)GlobalLock(hNewGroup);
@@ -252,7 +246,7 @@ int ConvertToUnicodeGroup(LPGROUPDEF_A lpGroupORI, LPHANDLE lphNewGroup)
         lpT = (LPBYTE)PTR(lpGroupORI, ((LPITEMDEF_A)lpid_A)->pIconRes);
         offset = AddThing_A(hNewGroup, (LPSTR)lpT, lpid->cbIconRes);
         if (!offset) {
-            KdPrint(("ConvGrp: AddThing pIconRes failed for item %d \n", i));
+            // KdPrint(("ConvGrp: AddThing pIconRes failed for item %d \n", i));
             goto PuntCreation;
         }
         lpgd = (LPGROUPDEF)GlobalLock(hNewGroup);
@@ -314,9 +308,9 @@ int ConvertToUnicodeGroup(LPGROUPDEF_A lpGroupORI, LPHANDLE lphNewGroup)
                           cb
                         )) {
 
-                KdPrint(("ConvGrp: AddTag wItem=%d, wID=%d failed \n",
-                              lptag_A->wItem ,
-                              lptag_A->wID));
+                // KdPrint(("ConvGrp: AddTag wItem=%d, wID=%d failed \n",
+                //               lptag_A->wItem ,
+                //               lptag_A->wID));
             }
 
             if (bAlloc && lpTagValueUNI) {
