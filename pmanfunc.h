@@ -33,3 +33,4 @@ BOOL RunFile(HWND hWndOwner, HICON hIcon, LPWSTR lpszDir, LPWSTR lpszTitle, LPWS
 BOOL ShutdownDlg(HWND hWndOwner);
 BOOL CascadeChildWindows(HWND hwndParent, UINT nCode);
 UINT GetIconIdFromIndex(LPWSTR szIconPath, UINT iIconIndex);
+BOOL APIENTRY RegenerateUserEnvironment(void** pNewEnv, BOOL bSetCurrentEnv);

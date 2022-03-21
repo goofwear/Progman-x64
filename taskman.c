@@ -23,7 +23,6 @@ Abstract:
 #include "progman.h"
 #include "security.h"
 #include "pmanfunc.h"
-#include "regapi.h"
 
 // funny define
 #define NtCurrentProcess GetCurrentProcess

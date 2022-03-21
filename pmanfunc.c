@@ -12,7 +12,6 @@
 #include <strsafe.h>
 #include <powerbase.h>
 #include <powrprof.h>
-#include "ntddk.h"
 #undef LoadEjectFunction
 #include "pmanfunc.h"
 #include "progman.h"
@@ -237,4 +236,15 @@ UINT GetIconIdFromIndex(LPWSTR szIconPath, UINT iIconIndex)
 		return iIconId;
 	else
 		return 0;
+}
+
+BOOL APIENTRY RegenerateUserEnvironment(void** pNewEnv, BOOL bSetCurrentEnv)
+{
+	HMODULE hRunLib = LoadLibrary(TEXT("shell32.dll"));
+	if (hRunLib) {
+		FARPROC fRunLib = GetProcAddress(hRunLib, "RegenerateUserEnvironment");
+		return fRunLib(pNewEnv, bSetCurrentEnv);
+		FreeLibrary(hRunLib);
+	}
+	return 0;
 }
