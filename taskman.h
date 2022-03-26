@@ -57,12 +57,10 @@ typedef enum _PROCESSINFOCLASS {
 // Taskman prototyes
 
 INT_PTR APIENTRY TaskmanDlgProc(HWND hDlg, UINT wMsg, WPARAM wParam, LPARAM lParam);
-WORD APIENTRY TMExecProgram(LPTSTR lpszPath, LPTSTR lpDir, LPTSTR lpTitle);
 
 void APIENTRY GetPathInfo(LPTSTR szPath, LPTSTR*pszFileName, LPTSTR*pszExt, WORD *pich, BOOL *pfUnc);
 BOOL TestTokenForAdmin(HANDLE Token);
 
-// WINUSERAPI VOID SwitchToThisWindow(HWND, BOOL);
 INT TMMessageBox(HWND hWnd,WORD idTitle,WORD idMessage,PTSTR psz,WORD wStyle);
 
 // Taskman global variables

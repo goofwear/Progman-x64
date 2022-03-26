@@ -116,8 +116,8 @@ HWND NEAR PASCAL IsGroupAlreadyLoaded(LPTSTR lpGroupKey, BOOL bCommonGroup);
 
 BOOL NEAR PASCAL StartupCmp(LPTSTR szSrc1, LPTSTR szSrc2)
 {
-	TCHAR sz1[MAXGROUPNAMELEN+1];
-	TCHAR sz2[MAXMESSAGELEN+1];
+	TCHAR sz1[MAXGROUPNAMELEN + 1];
+	TCHAR sz2[MAXMESSAGELEN + 1];
 	LPTSTR lp1, lp2;
 
 	lstrcpy(sz1, szSrc1);
@@ -675,12 +675,15 @@ HWND APIENTRY CreateFrameWindow(register PRECT prc, WORD nCmdShow)
 		// replace Close menu item with Exit Windows
 		LoadString(hAppInstance, IDS_SHUTDOWN, szBuffer, CharSizeOf(szBuffer));
 		ModifyMenu(hSystemMenu, SC_CLOSE, MF_BYCOMMAND | MF_STRING, IDM_SHUTDOWN, szBuffer);
+
 		// Add Open Task Manager to the window controls menu
 		LoadString(hAppInstance, IDS_TASKMGR, szBuffer, CharSizeOf(szBuffer));
 		InsertMenu(hSystemMenu, 6, MF_BYPOSITION | MF_STRING, IDM_TASKMGR, szBuffer);
+
 		// Register these hotkeys only if the default shell
 		// Presumably, if shutdown appears, we're the default shell.
 		RegisterHotKey(hwndProgman, HOTKEY_RUNFILE, MOD_WIN | MOD_NOREPEAT, 0x52); // WIN+R; Run hotkey
+		RegisterHotKey(hwndProgman, HOTKEY_SYSTRAY, MOD_WIN | MOD_NOREPEAT, NULL); // WIN; Notification Area hotkey
 	}
 
 	if (hkeyPMRestrict && !UserIsAdmin) {

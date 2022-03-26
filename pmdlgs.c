@@ -23,9 +23,6 @@
 #include "commdlg.h"
 #include "extract.h"
 #include "pmanfunc.h"
-// #include "io.h"
-// #include "stdio.h"
-// #include <vdmapi.h>
 
 // GET_WM_* Definitions, pwin32.h
 #define GET_WM_COMMAND_ID(wp, lp)               LOWORD(wp)
@@ -46,8 +43,6 @@ TCHAR szCommdlg[] = TEXT("comdlg32.dll");       // The name of the common dialog
 typedef BOOL (APIENTRY *OPENFILENAME_PROC)(LPOPENFILENAME);      // Commdlgs GetOpenFileName routine.
 OPENFILENAME_PROC lpfnGOFN;
 
-#define szGetOpenFileName "GetOpenFileNameW"
-
 /* from pmgseg.c */
 DWORD PASCAL SizeofGroup(LPGROUPDEF lpgd);
 void RemoveBackslashFromKeyName(LPTSTR lpKeyName);
@@ -64,6 +59,7 @@ BOOL    bCheckBinaryDirtyFlag;
 void    CheckBinaryThread (LPVOID);
 extern TCHAR szCheckBinaryType[];
 extern TCHAR szCheckBinaryTimeout[];
+BOOL OFNHookProc(HWND uP1, UINT uP2, WPARAM uP3, LPARAM uP4);
 
 
 //#ifdef JAPAN
@@ -1552,40 +1548,6 @@ ExitFalse:
 
 /*--------------------------------------------------------------------------*/
 /*                                                                          */
-/*  BrowseOK() -                                                            */
-/*                                                                          */
-/*--------------------------------------------------------------------------*/
-BOOL NEAR PASCAL BrowseOK(HWND hWnd)
-{
-	DWORD dwSave = dwContext;
-	TCHAR szPathField[MAXITEMPATHLEN+1];
-	BOOL ret;
-
-	dwContext = IDH_ICONBROWSEDLG;
-	GetDlgItemText(hWnd, IDD_NAME, szPathField, CharSizeOf(szPathField));
-	// if (GetFileNameFromBrowse(hWnd, szPathField, sizeof(szPathField),
-	//                                  NULL, IDS_CHNGICONPROGS, TEXT("ico"))) {
-	if (GetFileNameFromBrowse(hWnd, szPathField, sizeof(szPathField), NULL, TEXT("ico"), IDS_CHNGICONPROGS, IDS_BROWSE)) {
-		//
-		// if filename or directory have spaces, put the path
-		// between quotes.
-		//
-
-		CheckEscapes(szPathField, MAXITEMPATHLEN+1);
-		SetDlgItemText(hWnd, IDD_NAME, szPathField);
-		/* Set default button to OK. */
-		PostMessage(hWnd, WM_NEXTDLGCTL, (WPARAM)GetDlgItem(hWnd, IDOK), TRUE);
-		ret = TRUE;
-	}
-	else
-		ret = FALSE;
-
-	dwContext = dwSave;
-	return ret;
-}
-
-/*--------------------------------------------------------------------------*/
-/*                                                                          */
 /*  IconFileExists() -                                                      */
 /*                                                                          */
 /* Checks if the file exists, if it doesn't it tries tagging on .exe and    */
@@ -1835,6 +1797,11 @@ Duplicate:
  *         'szPathField' is used as a temporary variable.
  */
 
+BOOL OFNHookProc(HWND uP1, UINT uP2, WPARAM uP3, LPARAM uP4)
+{
+	return FALSE;
+}
+
 /*** NewItemDlgProc --         Dialog Procedure
  *
  *
@@ -1856,328 +1823,333 @@ Duplicate:
 INT_PTR APIENTRY NewItemDlgProc(HWND hwnd, UINT uiMsg, WPARAM wParam, LPARAM lParam)
 {
 static BOOL bIsWOWApp = FALSE;
-  DWORD dwThreadID;
-  HANDLE hThread = NULL;
-  HWND  hIcon;
-  DWORD dwBinaryInfo, cbData, dwDataType;
-  BOOL  bDoit;
+	DWORD dwThreadID;
+	HANDLE hThread = NULL;
+	HWND  hIcon;
+	DWORD dwBinaryInfo, cbData, dwDataType;
+	BOOL  bDoit;
 
 
 
-  switch (uiMsg) {
-	  case WM_INITDIALOG:
-		  if (GroupFull(pCurrentGroup)) {
-			  EndDialog(hwnd, FALSE);
-			  break;
-		  }
+	switch (uiMsg) {
+		case WM_INITDIALOG:
+			if (GroupFull(pCurrentGroup)) {
+				EndDialog(hwnd, FALSE);
+				break;
+			}
 
-		  SendDlgItemMessage(hwnd, IDD_NAME, EM_LIMITTEXT, MAXITEMNAMELEN, 0L);
-		  SendDlgItemMessage(hwnd, IDD_COMMAND, EM_LIMITTEXT, MAXITEMPATHLEN, 0L);
-		  SendDlgItemMessage(hwnd, IDD_DIR, EM_LIMITTEXT, MAXITEMPATHLEN, 0L);
-		  szNameField[0] = TEXT('\0');
-		  szPathField[0] = TEXT('\0');
-		  szDirField[0] = TEXT('\0');
-		  szIconPath[0] = TEXT('\0');
-		  iDlgIconId = 0;
-		  iDlgIconIndex = 0;
-		  if (hDlgIcon)
-			  DestroyIcon(hDlgIcon);
-		  hDlgIcon = NULL;
-		  EnableWindow(GetDlgItem(hwnd, IDOK), FALSE);
-		  EnableWindow(GetDlgItem(hwnd, IDD_ICON), FALSE);
-		  CheckDlgButton(hwnd, IDD_NEWVDM, 1);
-		  EnableWindow(GetDlgItem(hwnd, IDD_NEWVDM), FALSE);
-		  fNewIcon = FALSE;
+			SendDlgItemMessage(hwnd, IDD_NAME, EM_LIMITTEXT, MAXITEMNAMELEN, 0L);
+			SendDlgItemMessage(hwnd, IDD_COMMAND, EM_LIMITTEXT, MAXITEMPATHLEN, 0L);
+			SendDlgItemMessage(hwnd, IDD_DIR, EM_LIMITTEXT, MAXITEMPATHLEN, 0L);
+			szNameField[0] = TEXT('\0');
+			szPathField[0] = TEXT('\0');
+			szDirField[0] = TEXT('\0');
+			szIconPath[0] = TEXT('\0');
+			iDlgIconId = 0;
+			iDlgIconIndex = 0;
+			if (hDlgIcon)
+				DestroyIcon(hDlgIcon);
+			hDlgIcon = NULL;
+			EnableWindow(GetDlgItem(hwnd, IDOK), FALSE);
+			EnableWindow(GetDlgItem(hwnd, IDD_ICON), FALSE);
+			CheckDlgButton(hwnd, IDD_NEWVDM, 1);
+			EnableWindow(GetDlgItem(hwnd, IDD_NEWVDM), FALSE);
+			fNewIcon = FALSE;
 
-		  //
-		  //  Set the inital state for the thread which checks the binary
-		  //  type.
-		  //
+			//
+			//  Set the inital state for the thread which checks the binary
+			//  type.
+			//
 
-		  //
-		  // Query if the binary type checking is enabled.
-		  //
+			//
+			// Query if the binary type checking is enabled.
+			//
 
-		  cbData = sizeof(dwBinaryInfo);
-		  if (RegQueryValueEx(hkeyPMSettings, szCheckBinaryType, 0, &dwDataType,
-					   (LPBYTE)&dwBinaryInfo, &cbData) == ERROR_SUCCESS) {
-			  bCheckBinaryType = (BOOL) dwBinaryInfo;
-		  } else {
-			  bCheckBinaryType = BINARY_TYPE_DEFAULT;
-		  }
+			cbData = sizeof(dwBinaryInfo);
+			if (RegQueryValueEx(hkeyPMSettings, szCheckBinaryType, 0, &dwDataType,
+					(LPBYTE)&dwBinaryInfo, &cbData) == ERROR_SUCCESS) {
+				bCheckBinaryType = (BOOL) dwBinaryInfo;
+			} else {
+				bCheckBinaryType = BINARY_TYPE_DEFAULT;
+			}
 
-		  //
-		  // Query the binary type checking timeout value.
-		  //
+			//
+			// Query the binary type checking timeout value.
+			//
 
-		  cbData = sizeof(dwBinaryInfo);
-		  if (RegQueryValueEx(hkeyPMSettings, szCheckBinaryTimeout, 0, &dwDataType,
-					   (LPBYTE)&dwBinaryInfo, &cbData) == ERROR_SUCCESS) {
-			  uiCheckBinaryTimeout = (UINT) dwBinaryInfo;
-		  } else {
-			  uiCheckBinaryTimeout = BINARY_TIMEOUT_DEFAULT;
-		  }
+			cbData = sizeof(dwBinaryInfo);
+			if (RegQueryValueEx(hkeyPMSettings, szCheckBinaryTimeout, 0, &dwDataType,
+					(LPBYTE)&dwBinaryInfo, &cbData) == ERROR_SUCCESS) {
+				uiCheckBinaryTimeout = (UINT) dwBinaryInfo;
+			} else {
+				uiCheckBinaryTimeout = BINARY_TIMEOUT_DEFAULT;
+			}
 
-		  //
-		  // Create the worker thread, and the signal event.  If appropriate.
-		  //
+			//
+			// Create the worker thread, and the signal event.  If appropriate.
+			//
 
-		  if (bCheckBinaryType) {
-			  hCheckBinaryEvent = CreateEvent (NULL, FALSE, FALSE,
-											   CHECK_BINARY_EVENT_NAME);
+			if (bCheckBinaryType) {
+				hCheckBinaryEvent = CreateEvent (NULL, FALSE, FALSE,
+					CHECK_BINARY_EVENT_NAME);
+				hThread = CreateThread (NULL, 0,
+					(LPTHREAD_START_ROUTINE) CheckBinaryThread,
+					(LPVOID) hwnd, 0, &dwThreadID);
 
-			  hThread = CreateThread (NULL, 0,
-									 (LPTHREAD_START_ROUTINE) CheckBinaryThread,
-									 (LPVOID) hwnd, 0, &dwThreadID);
+				bCheckBinaryDirtyFlag = FALSE;
+			}
 
-			  bCheckBinaryDirtyFlag = FALSE;
-		  }
+			if (!bCheckBinaryType || !hThread || !hCheckBinaryEvent) {
+				//
+				// If this statement is true, either binary type checking 
+				// is disabled or we failed to create the event or the thread.
+				// In this case, enable the separate memory checkbox, and let
+				// the user decide on his own.
+				//
 
-		  if (!bCheckBinaryType || !hThread || !hCheckBinaryEvent) {
-			  //
-			  // If this statement is true, either binary type checking 
-			  // is disabled or we failed to create the event or the thread.
-			  // In this case, enable the separate memory checkbox, and let
-			  // the user decide on his own.
-			  //
+				CheckDlgButton(hwnd, IDD_NEWVDM, 0);
+				EnableWindow(GetDlgItem(hwnd,IDD_NEWVDM), TRUE);
 
-			  CheckDlgButton(hwnd, IDD_NEWVDM, 0);
-			  EnableWindow(GetDlgItem(hwnd,IDD_NEWVDM), TRUE);
+				//
+				// Clean up either item that succeeded
+				//
+				if (hCheckBinaryEvent) {
+					CloseHandle (hCheckBinaryEvent);
+				}
 
-			  //
-			  // Clean up either item that succeeded
-			  //
-			  if (hCheckBinaryEvent) {
-				  CloseHandle (hCheckBinaryEvent);
-			  }
+				if (hThread) {
+					TerminateThread (hThread, 0);
+				}
 
-			  if (hThread) {
-				  TerminateThread (hThread, 0);
-			  }
+				//
+				// Setting this variable to NULL will prevent the second
+				// thread from trying to check the binary type.
+				//
 
-			  //
-			  // Setting this variable to NULL will prevent the second
-			  // thread from trying to check the binary type.
-			  //
+				hCheckBinaryEvent = NULL;
+			}
+			break;
 
-			  hCheckBinaryEvent = NULL;
-		  }
+		case WM_TIMER:
+			if (hCheckBinaryEvent && bCheckBinaryDirtyFlag) {
+				bCheckBinaryDirtyFlag = FALSE;
+				SetEvent (hCheckBinaryEvent);
+			}
+			break;
 
-		  break;
+		case WM_COMMAND:
+			switch(GET_WM_COMMAND_ID(wParam, lParam)) {
+			case IDD_HELP:
+				goto DoHelp;
 
-	  case WM_TIMER:
-		  if (hCheckBinaryEvent && bCheckBinaryDirtyFlag) {
-			  bCheckBinaryDirtyFlag = FALSE;
-			  SetEvent (hCheckBinaryEvent);
-		  }
-		  break;
+			case IDD_COMMAND:
+			{
+				if (GET_WM_COMMAND_CMD(wParam, lParam) != EN_UPDATE)
+					break;
 
-	  case WM_COMMAND:
-		  switch(GET_WM_COMMAND_ID(wParam, lParam)) {
-		  case IDD_HELP:
-			  goto DoHelp;
+				if (bCheckBinaryType) {
+					bCheckBinaryDirtyFlag = TRUE;
+					SetTimer (hwnd, CHECK_BINARY_ID, uiCheckBinaryTimeout, NULL);
+				}
+				bDoit = (GetDlgItemText(hwnd, IDD_COMMAND, szPathField, MAXITEMPATHLEN+1) > 0);
+				EnableWindow(GetDlgItem(hwnd, IDOK), bDoit);
+				if ( (hIcon = GetDlgItem(hwnd, IDD_ICON)) ) {
+					EnableWindow(hIcon, bDoit);
+				}
 
-		  case IDD_COMMAND:
-		  {
-			  if (GET_WM_COMMAND_CMD(wParam, lParam) != EN_UPDATE)
-				  break;
+				break;
+			}
 
-			  if (bCheckBinaryType) {
-				  bCheckBinaryDirtyFlag = TRUE;
-				  SetTimer (hwnd, CHECK_BINARY_ID, uiCheckBinaryTimeout, NULL);
-			  }
-			  bDoit = (GetDlgItemText(hwnd, IDD_COMMAND, szPathField, MAXITEMPATHLEN+1) > 0);
-			  EnableWindow(GetDlgItem(hwnd, IDOK), bDoit);
-			  if ( (hIcon = GetDlgItem(hwnd, IDD_ICON)) ) {
-				  EnableWindow(hIcon, bDoit);
-			  }
+			case IDD_BROWSE:
+			{
+				DWORD dwSave = dwContext;
+				TCHAR szPathField[MAX_PATH];
+				OPENFILENAME ofn;
 
-			  break;
-		  }
+				dwContext = IDH_PROPBROWSEDLG;
+				GetDlgItemText(hwnd, IDD_COMMAND, szPathField, MAX_PATH);
+				GetDlgItemText(hwnd, IDD_DIR, szDirField, MAX_PATH);
 
-		  case IDD_BROWSE:
-		  {
-			  DWORD dwSave = dwContext;
-			  TCHAR szPathField[MAXITEMPATHLEN+1];
+				/* Get PathField using browser dlg. */
+				ofn.lStructSize = sizeof(OPENFILENAME);
+				ofn.hwndOwner = hwnd;
+				ofn.hInstance = hAppInstance;
+				ofn.lpstrFilter = &TEXT("All Files\0*.*\0\0");
+				ofn.lpstrCustomFilter = NULL;
+				ofn.nMaxCustFilter = NULL;
+				ofn.nFilterIndex = NULL;
+				ofn.lpstrFile = &szPathField;
+				ofn.nMaxFile = sizeof(szPathField);
+				ofn.lpstrFileTitle = NULL;
+				ofn.nMaxFileTitle = NULL;
+				ofn.lpstrInitialDir = NULL;
+				ofn.lpstrTitle = NULL;
+				ofn.Flags = OFN_ENABLEHOOK;
+				ofn.lpfnHook = &OFNHookProc;
 
-			  dwContext = IDH_PROPBROWSEDLG;
-			  GetDlgItemText(hwnd, IDD_COMMAND, szPathField, MAXITEMPATHLEN+1);
-			  GetDlgItemText(hwnd, IDD_DIR, szDirField, MAXITEMPATHLEN+1);
-			  /* Get PathField using browser dlg. */
-			  if (GetFileNameFromBrowse(hwnd, szPathField, sizeof(szPathField), NULL,
-						TEXT("exe"), IDS_PROPERTIESPROGS, IDS_BROWSE)) {
-				  // OK.
-				  //
-				  // if filename or directory have spaces, put the path
-				  // between quotes.
-				  //
-				  CheckEscapes(szPathField, MAXITEMPATHLEN+1);
+				if (GetOpenFileName(&ofn)) {
+					// OK.
+					//
+					// if filename or directory have spaces, put the path
+					// between quotes.
+					//
+					CheckEscapes(szPathField, MAX_PATH);
 
-				  SetDlgItemText(hwnd, IDD_COMMAND, szPathField);
-				  EnableWindow(GetDlgItem(hwnd, IDOK), TRUE);
-				  EnableWindow(GetDlgItem(hwnd, IDD_ICON), TRUE);
-				  /* Set default button to OK. */
-				  PostMessage(hwnd, WM_NEXTDLGCTL, (WPARAM)GetDlgItem(hwnd, IDOK), TRUE);
-			  }
-			  dwContext = dwSave;
-			  break;
-		  }
+					SetDlgItemText(hwnd, IDD_COMMAND, szPathField);
+					EnableWindow(GetDlgItem(hwnd, IDOK), TRUE);
+					EnableWindow(GetDlgItem(hwnd, IDD_ICON), TRUE);
+					/* Set default button to OK. */
+					PostMessage(hwnd, WM_NEXTDLGCTL, (WPARAM)GetDlgItem(hwnd, IDOK), TRUE);
+				}
+				dwContext = dwSave;
+				break;
+			}
 
-		  case IDD_ICON:
-		  {
-			  TCHAR szTempField[MAX_PATH + 1];
+			case IDD_ICON:
+			{
+				TCHAR szTempField[MAX_PATH];
 
-			  GetDlgItemText(hwnd, IDD_COMMAND, szPathField, MAX_PATH + 1);
+				GetDlgItemText(hwnd, IDD_COMMAND, szPathField, MAX_PATH);
 
-//#ifdef JAPAN
-//              if (CheckPortName(hwnd,szPathField))
-//                  break;
-//#endif
+				GetDlgItemText(hwnd, IDD_DIR, szDirField, MAX_PATH);
 
-			  GetDlgItemText(hwnd, IDD_DIR, szDirField, MAX_PATH + 1);
+				// Expand env variables.
+				DoEnvironmentSubst(szPathField, MAX_PATH)
+					&& DoEnvironmentSubst(szDirField, MAX_PATH);
 
-			  // Expand env variables.
-			  DoEnvironmentSubst(szPathField, MAX_PATH + 1)
-				&& DoEnvironmentSubst(szDirField, MAX_PATH + 1);
+				// Get a full path to the icon.
+				StripArgs(szPathField);
+					//
+					// Change to original directory in case the use entered a
+					// relative path.
+					//
+				SetCurrentDirectory(szOriginalDirectory);
+				FindExecutable(szPathField, szDirField, szTempField);
+				SetCurrentDirectory(szWindowsDirectory);
 
-			  // Get a full path to the icon.
-			  StripArgs(szPathField);
-			  //
-			  // Change to original directory in case the use entered a
-			  // relative path.
-			  //
-			  SetCurrentDirectory(szOriginalDirectory);
-			  FindExecutable(szPathField, szDirField, szTempField);
-			  SetCurrentDirectory(szWindowsDirectory);
+				/* Discard the old Icon Path. */
+				lstrcpy(szIconPath, szTempField);
+				iDlgIconId = 0;
+				iDlgIconIndex = 0;
 
-			  /* Discard the old Icon Path. */
-			  lstrcpy(szIconPath, szTempField);
-			  iDlgIconId = 0;
-			  iDlgIconIndex = 0;
+				if (fNewIcon = PickIconDlg(hwnd, &szIconPath, MAX_PATH, &iDlgIconIndex)) {
+					// Set default button to OK.
+					hDlgIcon = ExtractIcon(hAppInstance, &szIconPath, iDlgIconIndex);
+					if (hDlgIcon) {
+						iDlgIconId = GetIconIdFromIndex(szIconPath, iDlgIconIndex);
+					}
+					else {
+						hDlgIcon = NULL;
+						iDlgIconId = 0;
+						iDlgIconIndex = 0;
+					}
+					// make sure we have a valid icon
+					PostMessage(hwnd, WM_NEXTDLGCTL, (WPARAM)GetDlgItem(hwnd, IDOK), TRUE);
+					SendDlgItemMessage(hwnd, IDD_CURICON, STM_SETICON, (WPARAM)hDlgIcon, 0L);
+					if (hIconGlobal) {
+						DestroyIcon(hIconGlobal);
+						hIconGlobal = NULL;
+					}
+				}
+				else { /* Cancel/ESC was selected, reset Icon Path to NULL. */
+					*szIconPath = TEXT('\0');
+					iDlgIconId = 0;
+					iDlgIconIndex = 0;
+				}
 
-			  if (fNewIcon = PickIconDlg(hwnd, &szIconPath, MAX_PATH, &iDlgIconIndex)) {
-				  // Set default button to OK.
-				  hDlgIcon = ExtractIcon(hAppInstance, &szIconPath, iDlgIconIndex);
-				  if (hDlgIcon) {
-					  iDlgIconId = GetIconIdFromIndex(szIconPath, iDlgIconIndex);
-				  }
-				  else {
-					  hDlgIcon = NULL;
-					  iDlgIconId = 0;
-					  iDlgIconIndex = 0;
-				  }
-				  // make sure we have a valid icon
-				  PostMessage(hwnd, WM_NEXTDLGCTL, (WPARAM)GetDlgItem(hwnd, IDOK), TRUE);
-				  SendDlgItemMessage(hwnd, IDD_CURICON, STM_SETICON, (WPARAM)hDlgIcon, 0L);
-				  if (hIconGlobal) {
-					  DestroyIcon(hIconGlobal);
-					  hIconGlobal = NULL;
-				  }
-			  }
-			  else { /* Cancel/ESC was selected, reset Icon Path to NULL. */
-				  *szIconPath = TEXT('\0');
-				  iDlgIconId = 0;
-				  iDlgIconIndex = 0;
-			  }
+				break;
+			}
 
-			  break;
-		  }
+			case IDOK:
+			{
+				WORD hk;
+				TCHAR szHackField[MAX_PATH];
+				DWORD dwRet;
+				DWORD dwFlags = CI_ACTIVATE | CI_SET_DOS_FULLSCRN;
 
-		  case IDOK:
-		  {
-			  WORD hk;
-			  TCHAR szHackField[MAXITEMPATHLEN + 1];
-			  DWORD dwRet;
-			  DWORD dwFlags = CI_ACTIVATE | CI_SET_DOS_FULLSCRN;
+				if(!GetDlgItemText(hwnd, IDD_COMMAND, szPathField, MAX_PATH)) {
+					szPathField[0] = TEXT('\0');
+					break;
+				}
 
-			  if(!GetDlgItemText(hwnd, IDD_COMMAND, szPathField, MAXITEMPATHLEN + 1)) {
-				 szPathField[0] = TEXT('\0');
-				 break;
-			  }
+				//RemoveLeadingSpaces(szPathField);
+				hk = (WORD) SendDlgItemMessage(hwnd, IDD_HOTKEY, WM_GETHOTKEY,0,0L);
+				if (!CheckHotKeyInUse(hk, TRUE))
+					break;
 
-			  //RemoveLeadingSpaces(szPathField);
-			  hk = (WORD) SendDlgItemMessage(hwnd, IDD_HOTKEY, WM_GETHOTKEY,0,0L);
-			  if (!CheckHotKeyInUse(hk, TRUE))
-				  break;
+				GetDlgItemText(hwnd, IDD_DIR, szDirField, MAXITEMPATHLEN+1);
 
-			  GetDlgItemText(hwnd, IDD_DIR, szDirField, MAXITEMPATHLEN+1);
+				//RemoveLeadingSpaces(szDirField)
+					/* Expand env variables. */
+				DoEnvironmentSubst(szPathField, MAXITEMPATHLEN+1);
+				DoEnvironmentSubst(szDirField, MAXITEMPATHLEN+1);
 
-			  //RemoveLeadingSpaces(szDirField)
-			  /* Expand env variables. */
-			  DoEnvironmentSubst(szPathField, MAXITEMPATHLEN+1);
-			  DoEnvironmentSubst(szDirField, MAXITEMPATHLEN+1);
+				/* Now remove the arguments from the command line. */
+				StripArgs(szPathField);
 
-			  /* Now remove the arguments from the command line. */
-			  StripArgs(szPathField);
+				dwRet = ValidatePath(hwnd, szPathField, szDirField, szHackField);
+				if (dwRet == PATH_INVALID) {
+					break;
+				}
+				else if (dwRet == PATH_INVALID_OK) {
+					dwFlags |= CI_NO_ASSOCIATION;
+				}
 
-			  dwRet = ValidatePath(hwnd, szPathField, szDirField, szHackField);
-			  if (dwRet == PATH_INVALID) {
-				  break;
-			  }
-			  else if (dwRet == PATH_INVALID_OK) {
-				  dwFlags |= CI_NO_ASSOCIATION;
-			  }
-
-			  /* Special case DOS apps. */
-			  HandleDosApps(szHackField);
+				/* Special case DOS apps. */
+				HandleDosApps(szHackField);
 
 
-			  /* If the user hasn't supplied a description then build one. */
-			  if (!GetDlgItemText(hwnd, IDD_NAME, szNameField, MAXITEMNAMELEN+1)) {
-				  szNameField[0] = TEXT('\0');
-			  }
+				/* If the user hasn't supplied a description then build one. */
+				if (!GetDlgItemText(hwnd, IDD_NAME, szNameField, MAX_PATH)) {
+					szNameField[0] = TEXT('\0');
+				}
 
-			  /* Get the original command line with arguments. */
-			  GetDlgItemText(hwnd, IDD_COMMAND, szPathField, MAXITEMPATHLEN+1);
+				/* Get the original command line with arguments. */
+				GetDlgItemText(hwnd, IDD_COMMAND, szPathField, MAX_PATH);
 
-//#ifdef JAPAN
-//              if (CheckPortName(hwnd,szPathField))
-//                  break;
-//#endif
+				/* Get original (unexpanded) directory. */
+				if (!GetDlgItemText(hwnd, IDD_DIR, szDirField, MAX_PATH)) {
+					szDirField[0] = TEXT('\0');
+				}
+				else {
+					LPTSTR lpEnd;
+					TCHAR  chT;
 
-			  /* Get original (unexpanded) directory. */
-			  if (!GetDlgItemText(hwnd, IDD_DIR, szDirField, MAXITEMPATHLEN+1)) {
-				  szDirField[0] = TEXT('\0');
-			  } else {
-				  LPTSTR lpEnd;
-				  TCHAR  chT;
+					// Remove trailing spaces (inside of quote if applicable)
+					lpEnd = szDirField + lstrlen (szDirField) - 1;
+					chT = *lpEnd;
 
-				  // Remove trailing spaces (inside of quote if applicable)
-				  lpEnd = szDirField + lstrlen (szDirField) - 1;
-				  chT = *lpEnd;
+					if ( (chT == TEXT('\"')) || (chT == TEXT(' ')) ) {
+						// MarkTa fix for spaces at the end of a filename
+						// Remove the spaces by moving the last character forward.
+						while (*(lpEnd-1) == TEXT(' '))
+							lpEnd--;
 
-				  if ( (chT == TEXT('\"')) || (chT == TEXT(' ')) ) {
-					 // MarkTa fix for spaces at the end of a filename
-					 // Remove the spaces by moving the last character forward.
-					 while (*(lpEnd-1) == TEXT(' '))
-						 lpEnd--;
+						*lpEnd = chT;
+						*(lpEnd+1) = TEXT ('\0');
 
-					 *lpEnd = chT;
-					 *(lpEnd+1) = TEXT ('\0');
+						// In case the character we saved was a space, we can
+						// NULL terminate it because now we know the next character
+						// to the left is valid, and the character to the right is
+						// already NULL.
 
-					 // In case the character we saved was a space, we can
-					 // NULL terminate it because now we know the next character
-					 // to the left is valid, and the character to the right is
-					 // already NULL.
+						if (*lpEnd == TEXT(' '))
+							*lpEnd = TEXT('\0');
+					}
+				}
 
-					 if (*lpEnd == TEXT(' '))
-					   *lpEnd = TEXT('\0');
-				  }
-			  }
+				GetStuffFromPIF(szPathField, szNameField, szDirField);
 
-			  GetStuffFromPIF(szPathField, szNameField, szDirField);
+				if (!*szNameField) {
+					BuildDescription(szNameField, szPathField);
+				}
 
-			  if (!*szNameField) {
-				  BuildDescription(szNameField, szPathField);
-			  }
+				/* If there's no default directory then add one. */
+				if (!*szDirField) {
+					GetDirectoryFromPath(szPathField, szDirField);
+				}
 
-			  /* If there's no default directory then add one. */
-			  if (!*szDirField) {
-				  GetDirectoryFromPath(szPathField, szDirField);
-			  }
-
-			  if (!InQuotes(szDirField)) {
-
+				if (!InQuotes(szDirField)) {
 					//
 					// if szDirField needs quotes and the work dir is too
 					// long than we need to truncate it.
@@ -2195,74 +2167,66 @@ static BOOL bIsWOWApp = FALSE;
 					else {
 						CheckEscapes(szDirField, MAXITEMPATHLEN+1);
 					}
-			  }
+				}
 
-			  if (IsWindowEnabled(GetDlgItem(hwnd, IDD_NEWVDM)) &&
-								  IsDlgButtonChecked(hwnd, IDD_NEWVDM)) {
-				  dwFlags |= CI_SEPARATE_VDM;
-			  }
+				if (IsWindowEnabled(GetDlgItem(hwnd, IDD_NEWVDM)) &&
+						IsDlgButtonChecked(hwnd, IDD_NEWVDM)) {
+					dwFlags |= CI_SEPARATE_VDM;
+				}
 
-			  /* Create new item using UNICODE strings. */
-			  CreateNewItem(pCurrentGroup->hwnd,
-							szNameField,
-							szPathField,
-							szIconPath,
-							szDirField,
-							hk,
-							(BOOL)IsDlgButtonChecked(hwnd, IDD_LOAD),
-							(WORD)iDlgIconId,
-							(WORD)iDlgIconIndex,
-							hDlgIcon,
-							NULL,
-							dwFlags);
-
-			  }
+				/* Create new item using UNICODE strings. */
+				CreateNewItem(pCurrentGroup->hwnd,
+					szNameField, szPathField,
+					szIconPath, szDirField,
+					hk, (BOOL)IsDlgButtonChecked(hwnd, IDD_LOAD),
+					(WORD)iDlgIconId, (WORD)iDlgIconIndex,
+					hDlgIcon, NULL, dwFlags);
+				}
 
 
 			  // Update scroll bars for new item
-			  if ((bAutoArrange) && (!bAutoArranging))
-				  ArrangeItems(pCurrentGroup->hwnd);
-			  else if (!bAutoArranging)
-				  CalcGroupScrolls(pCurrentGroup->hwnd);
+				if ((bAutoArrange) && (!bAutoArranging))
+					ArrangeItems(pCurrentGroup->hwnd);
+				else if (!bAutoArranging)
+					CalcGroupScrolls(pCurrentGroup->hwnd);
 
-			  // fall through...
+				// fall through...
 
-		  case IDCANCEL:
+			case IDCANCEL:
 
-			  if (bCheckBinaryType) {
-				  //
-				  // Setting this variable to false, and signaling the event
-				  // will cause the binary checking thread to terminate.
-				  //
+				if (bCheckBinaryType) {
+					//
+					// Setting this variable to false, and signaling the event
+					// will cause the binary checking thread to terminate.
+					//
 
-				  bCheckBinaryType = FALSE;
-				  SetEvent (hCheckBinaryEvent);
-				  KillTimer (hwnd, CHECK_BINARY_ID);
-			  }
+					bCheckBinaryType = FALSE;
+					SetEvent (hCheckBinaryEvent);
+					KillTimer (hwnd, CHECK_BINARY_ID);
+				}
 
-			  EndDialog(hwnd, GET_WM_COMMAND_ID(wParam, lParam) == IDOK);
-			  GetRidOfIcon();
-			  break;
+				EndDialog(hwnd, GET_WM_COMMAND_ID(wParam, lParam) == IDOK);
+				GetRidOfIcon();
+				break;
 
-		  default:
-			  return(FALSE);
-		  }
-		  break;
+			default:
+				return(FALSE);
+			}
+	break;
 
-	  default:
+	default:
 
-		  if (uiMsg == uiHelpMessage || uiMsg == uiBrowseMessage) {
+		if (uiMsg == uiHelpMessage || uiMsg == uiBrowseMessage) {
 DoHelp:
-			  PMHelp(hwnd);
+			PMHelp(hwnd);
 
-			  return TRUE;
-		  } else
-			  return FALSE;
+			return TRUE;
+		} else
+			return FALSE;
 	}
 	UNREFERENCED_PARAMETER(lParam);
 	return(TRUE);
 }
-
 
 /*** NewGroupDlgProc --         Dialog Procedure
  *
@@ -2366,21 +2330,38 @@ DoHelp:
 BOOL NEAR PASCAL EditBrowseOK(HWND hDlg)
 {
 	DWORD dwSave = dwContext;
-	TCHAR szPathField[MAXITEMPATHLEN+1];
+	TCHAR szPathField[MAX_PATH];
 	BOOL ret;
+	OPENFILENAME ofn;
 
 	dwContext = IDH_PROPBROWSEDLG;
-	GetDlgItemText(hDlg, IDD_COMMAND, szPathField, MAXITEMPATHLEN+1);
-	GetDlgItemText(hDlg, IDD_DIR, szDirField, MAXITEMPATHLEN+1);
+	GetDlgItemText(hDlg, IDD_COMMAND, szPathField, MAX_PATH);
+	GetDlgItemText(hDlg, IDD_DIR, szDirField, MAX_PATH);
+
 	/* Get PathField using browser dlg. */
-	if (GetFileNameFromBrowse(hDlg, szPathField, sizeof(szPathField), szDirField,
-				TEXT("exe"), IDS_PROPERTIESPROGS, IDS_BROWSE)) {
+	ofn.lStructSize = sizeof(OPENFILENAME);
+	ofn.hwndOwner = hDlg;
+	ofn.hInstance = hAppInstance;
+	ofn.lpstrFilter = &TEXT("Programs\0*.EXE;*.PIF;*.COM;*.BAT;*.CMD\0\0");
+	ofn.lpstrCustomFilter = NULL;
+	ofn.nMaxCustFilter = NULL;
+	ofn.nFilterIndex = NULL;
+	ofn.lpstrFile = &szPathField;
+	ofn.nMaxFile = sizeof(szPathField);
+	ofn.lpstrFileTitle = NULL;
+	ofn.nMaxFileTitle = NULL;
+	ofn.lpstrInitialDir = NULL;
+	ofn.lpstrTitle = NULL;
+	ofn.Flags = OFN_ENABLEHOOK;
+	ofn.lpfnHook = &OFNHookProc;
+
+	if (GetOpenFileName(&ofn)) {
 		/* OK. */
 		//
 		// if filename or directory have spaces, put the path
 		// between quotes.
 		//
-		CheckEscapes(szPathField, MAXITEMPATHLEN+1);
+		CheckEscapes(szPathField, MAX_PATH);
 
 		SetDlgItemText(hDlg, IDD_COMMAND, szPathField);
 		EnableWindow(GetDlgItem(hDlg, IDOK), TRUE);

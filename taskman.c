@@ -18,6 +18,7 @@ Abstract:
 // Has to be unicode because InternalGetWindowText
 // user routine is strictly so.
 
+// Includes
 #include <Shlwapi.h>
 #include "taskman.h"
 #include "progman.h"
@@ -26,8 +27,6 @@ Abstract:
 
 // funny define
 #define NtCurrentProcess GetCurrentProcess
-
-// #include <port1632.h>
 
 extern HINSTANCE hAppInstance;
 

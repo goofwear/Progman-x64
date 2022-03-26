@@ -141,7 +141,8 @@ int MyAtoi(LPTSTR  string)
 	WideCharToMultiByte(CP_ACP, 0, string, INT_SIZE_LENGTH,
 		szAnsi, INT_SIZE_LENGTH, NULL, &fDefCharUsed);
 
-	return(atoi(szAnsi));
+	// return(atoi(szAnsi));
+	return(strtol(szAnsi, NULL, 10));
 #else
 	return(atoi(string));
 #endif

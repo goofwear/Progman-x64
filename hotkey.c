@@ -227,17 +227,17 @@ LRESULT APIENTRY HotKeyWndProc(register HWND hwnd, UINT wMsg,
     switch (wMsg){
     case WM_CREATE:
         SetHotKey(hwnd,0);
-        SendMessage(hwnd,WM_SETFONT,(WPARAM)GetStockObject(SYSTEM_FONT),0L);
+        SendMessage(hwnd, WM_SETFONT, (WPARAM)GetStockObject(SYSTEM_FONT), 0L);
         break;
 
     case WM_SETFOCUS:
-        InvalidateRect(hwnd,NULL,TRUE);
-        CreateCaret(hwnd,NULL,0,GetWindowLongPtr(hwnd,HWL_CYFONT));
+        InvalidateRect(hwnd, NULL, TRUE);
+        CreateCaret(hwnd, NULL, 0, GetWindowLongPtr(hwnd, HWL_CYFONT));
         ShowCaret(hwnd);
         break;
 
     case WM_KILLFOCUS:
-        if (!LOBYTE(GetWindowLongPtr(hwnd,HWL_HOTKEY))){
+        if (!LOBYTE(GetWindowLongPtr(hwnd, HWL_HOTKEY))){
             SetHotKey(hwnd,0);
         }
         DestroyCaret();
@@ -247,19 +247,19 @@ LRESULT APIENTRY HotKeyWndProc(register HWND hwnd, UINT wMsg,
         return DLGC_WANTCHARS | DLGC_WANTARROWS;
 
     case WM_SETTEXT:
-        SetHotKey(hwnd,LOWORD(lParam));
+        SetHotKey(hwnd, LOWORD(lParam));
         break;
 
     case WM_GETTEXT:
-        *(LPINT)lParam = GetWindowLongPtr(hwnd,HWL_HOTKEY);
+        *(LPINT)lParam = GetWindowLongPtr(hwnd, HWL_HOTKEY);
         break;
 
     case WM_SETHOTKEY:
-        SetHotKey(hwnd,(WPARAM) wParam);
+        SetHotKey(hwnd, (WPARAM) wParam);
         break;
 
     case WM_GETHOTKEY:
-        return GetWindowLongPtr(hwnd,HWL_HOTKEY);
+        return GetWindowLongPtr(hwnd, HWL_HOTKEY);
 
     case WM_LBUTTONDOWN:
         SetFocus(hwnd);
@@ -325,13 +325,13 @@ LRESULT APIENTRY HotKeyWndProc(register HWND hwnd, UINT wMsg,
 
 
     case WM_GETFONT:
-        return GetWindowLongPtr(hwnd,HWLP_FONT);
+        return GetWindowLongPtr(hwnd, HWLP_FONT);
 
     case WM_SETFONT:
-        lParam = GetWindowLongPtr(hwnd,HWLP_FONT);
-        SetWindowLongPtr(hwnd,HWLP_FONT,wParam);
+        lParam = GetWindowLongPtr(hwnd, HWLP_FONT);
+        SetWindowLongPtr(hwnd, HWLP_FONT, wParam);
         hdc = GetDC(hwnd);
-        wParam = (WPARAM) SelectObject(hdc,(HANDLE)wParam);
+        wParam = (WPARAM) SelectObject(hdc, (HANDLE)wParam);
         GetTextExtentPoint(hdc, TEXT("C"), 1, &size);
         SetWindowLongPtr(hwnd, HWL_CYFONT, size.cy);
         if (wParam){
@@ -347,12 +347,12 @@ LRESULT APIENTRY HotKeyWndProc(register HWND hwnd, UINT wMsg,
 
     case WM_ERASEBKGND:
         HideCaret(hwnd);
-        lParam = DefWindowProc(hwnd,wMsg,wParam,lParam);
+        lParam = DefWindowProc(hwnd, wMsg, wParam, lParam);
         ShowCaret(hwnd);
         return lParam;
 
     default:
-        return DefWindowProc(hwnd,wMsg,wParam,lParam);
+        return DefWindowProc(hwnd, wMsg, wParam, lParam);
     }
     return 0L;
 }

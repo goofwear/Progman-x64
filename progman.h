@@ -414,7 +414,8 @@ VOID APIENTRY SaveRecentFileList (HWND hwnd, LPTSTR szCurrentFile, WORD idContro
 
 /* Hotkey Defines */
 #define HOTKEY_TASKMAN			1
-#define HOTKEY_RUNFILE			101
+#define HOTKEY_SYSTRAY			2
+#define HOTKEY_RUNFILE			3
 
 /* Menu Command Defines */
 #define IDM_FILE				0
@@ -548,15 +549,16 @@ VOID APIENTRY SaveRecentFileList (HWND hwnd, LPTSTR szCurrentFile, WORD idContro
 #define IDS_TOOMANYCOMMONGROUPS 174
 
 #define IDS_TASKMGR				175
-#define IDS_SHUTDOWN			176
-#define IDS_RUN					177
+#define IDS_SYSTRAY				176
+#define IDS_SHUTDOWN			177
+#define IDS_RUN					178
 
-#define IDS_MSGBOXSTR1          178
-#define IDS_MSGBOXSTR2          179
+#define IDS_MSGBOXSTR1          179
+#define IDS_MSGBOXSTR2          180
 
-#define IDS_INSUFFICIENTQUOTA   180
+#define IDS_INSUFFICIENTQUOTA   181
 
-#define IDS_ANSIGROUPSMENU      181
+#define IDS_ANSIGROUPSMENU      182
 
 // Definitions for context menu
 #define IDCM_ITEM		1

@@ -168,10 +168,10 @@ BOOL FAR PASCAL CheckHotKey(WPARAM wParam, LPARAM lParam);
  *
  */
 
-int __cdecl main(
+int __cdecl wmain(
 	int argc,
-	char *argv[],
-	char *envp[])
+	wchar_t *argv[],
+	wchar_t *envp[])
 {
 	MSG msg;
 	HANDLE hInst;
