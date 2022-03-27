@@ -1797,11 +1797,6 @@ Duplicate:
  *         'szPathField' is used as a temporary variable.
  */
 
-BOOL OFNHookProc(HWND uP1, UINT uP2, WPARAM uP3, LPARAM uP4)
-{
-	return FALSE;
-}
-
 /*** NewItemDlgProc --         Dialog Procedure
  *
  *
@@ -1964,30 +1959,14 @@ static BOOL bIsWOWApp = FALSE;
 			{
 				DWORD dwSave = dwContext;
 				TCHAR szPathField[MAX_PATH];
-				OPENFILENAME ofn;
 
 				dwContext = IDH_PROPBROWSEDLG;
 				GetDlgItemText(hwnd, IDD_COMMAND, szPathField, MAX_PATH);
 				GetDlgItemText(hwnd, IDD_DIR, szDirField, MAX_PATH);
 
 				/* Get PathField using browser dlg. */
-				ofn.lStructSize = sizeof(OPENFILENAME);
-				ofn.hwndOwner = hwnd;
-				ofn.hInstance = hAppInstance;
-				ofn.lpstrFilter = &TEXT("All Files\0*.*\0\0");
-				ofn.lpstrCustomFilter = NULL;
-				ofn.nMaxCustFilter = NULL;
-				ofn.nFilterIndex = NULL;
-				ofn.lpstrFile = &szPathField;
-				ofn.nMaxFile = sizeof(szPathField);
-				ofn.lpstrFileTitle = NULL;
-				ofn.nMaxFileTitle = NULL;
-				ofn.lpstrInitialDir = NULL;
-				ofn.lpstrTitle = NULL;
-				ofn.Flags = OFN_ENABLEHOOK;
-				ofn.lpfnHook = &OFNHookProc;
-
-				if (GetOpenFileName(&ofn)) {
+				if (GetFileNameFromBrowse(hwnd, szPathField, sizeof(szPathField), szDirField, TEXT("exe"),
+						TEXT("Programs\0*.exe;*.pif;*.com;*.bat;*.cmd\0All Files (*.*)\0*.*\0"), TEXT("Open"))) {
 					// OK.
 					//
 					// if filename or directory have spaces, put the path
@@ -2332,30 +2311,14 @@ BOOL NEAR PASCAL EditBrowseOK(HWND hDlg)
 	DWORD dwSave = dwContext;
 	TCHAR szPathField[MAX_PATH];
 	BOOL ret;
-	OPENFILENAME ofn;
 
 	dwContext = IDH_PROPBROWSEDLG;
 	GetDlgItemText(hDlg, IDD_COMMAND, szPathField, MAX_PATH);
 	GetDlgItemText(hDlg, IDD_DIR, szDirField, MAX_PATH);
 
 	/* Get PathField using browser dlg. */
-	ofn.lStructSize = sizeof(OPENFILENAME);
-	ofn.hwndOwner = hDlg;
-	ofn.hInstance = hAppInstance;
-	ofn.lpstrFilter = &TEXT("Programs\0*.EXE;*.PIF;*.COM;*.BAT;*.CMD\0\0");
-	ofn.lpstrCustomFilter = NULL;
-	ofn.nMaxCustFilter = NULL;
-	ofn.nFilterIndex = NULL;
-	ofn.lpstrFile = &szPathField;
-	ofn.nMaxFile = sizeof(szPathField);
-	ofn.lpstrFileTitle = NULL;
-	ofn.nMaxFileTitle = NULL;
-	ofn.lpstrInitialDir = NULL;
-	ofn.lpstrTitle = NULL;
-	ofn.Flags = OFN_ENABLEHOOK;
-	ofn.lpfnHook = &OFNHookProc;
-
-	if (GetOpenFileName(&ofn)) {
+	if (GetFileNameFromBrowse(hDlg, szPathField, sizeof(szPathField), szDirField, TEXT("exe"),
+			TEXT("Programs\0*.exe;*.pif;*.com;*.bat;*.cmd\0All Files (*.*)\0*.*\0"), TEXT("Open"))) {
 		/* OK. */
 		//
 		// if filename or directory have spaces, put the path
